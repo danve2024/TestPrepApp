@@ -1,0 +1,50 @@
+* {
+    font-family: Cabin;
+    font-size: 24px;
+    scrollbar-color: #aaa white;
+    border-radius: 5px;
+    scrollbar-width: thin;
+    color: white;
+    background-color: #36454F;
+    text-decoration: none;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    width: 95%;
+    box-sizing: border-box;
+    position: fixed;
+    margin-top: 0px;
+}
+
+body {
+    margin: 40px
+}
+
+footer {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    width: 90%;
+    box-sizing: border-box;
+    position: fixed
+}
+
+.coat {
+    text-align: center
+}
+
+.score {
+    font-size: 50px
+}
+
+.streak {
+    font-size: 50px
+}
+
+.fire {
+    width: 40px
+}
+

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Cabin">
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+<header>
+    <a href="{{ url_for('score') }}"><div class="coat">
+        <div class="score">1600</div>Your score
+    </div></a>
+    <a href="{{ url_for('streak') }}"><div class="coat">
+        <div class="streak">5 <img class="fire" src="{{ url_for('static', filename='streak.png') }}"></div>
+        <div class="streak-sub">Streak</div>
+    </div></a>
+</header>
+<body>
+    <br><br><br><br>
+    {% block content %}{% endblock %}
+</body>
+<footer>
+    <a href="{{ url_for('lessons') }}"><div class="footer_button"><img src="{{ url_for('static', filename='lessons.png') }}">Lessons</div></a>
+    <a href="{{ url_for('timed') }}"><div class="footer_button"><img src="{{ url_for('static', filename='timed.png') }}">Timed Practice</div></a>
+    <a href="{{ url_for('quests') }}"><div class="footer_button"><img src="{{ url_for('static', filename='quests.png') }}">Daily Quests</div></a>
+    <a href="{{ url_for('profile') }}"><div class="footer_button"><img src="{{ url_for('static', filename='profile.png') }}">Profile</div></a>
+    <a href="{{ url_for('settings') }}"><div class="footer_button"><img src="{{ url_for('static', filename='settings.png') }}">Settings</div></a>
+</footer>
