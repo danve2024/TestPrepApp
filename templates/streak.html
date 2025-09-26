@@ -1,13 +1,41 @@
 {% extends "menu.html" %}
-
 {% block content %}
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eros turpis, maximus a iaculis quis, malesuada nec metus. Duis convallis lorem quis sem placerat placerat. Nam eget mollis diam, eu maximus ex. Fusce eu efficitur turpis. Nullam sit amet auctor velit. Curabitur eu faucibus mi. Mauris quis luctus est. Donec lacus est, luctus vitae faucibus quis, convallis a mi. Suspendisse pretium aliquam augue sit amet pulvinar. Nam ornare aliquet fermentum. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nunc blandit finibus dolor, vitae porta felis elementum non.
 
-Ut malesuada ligula ultrices nulla porta placerat. Nam blandit augue ipsum, eget rutrum dolor tristique sed. Sed ultrices eros vel consectetur malesuada. Nunc nisi est, varius et metus nec, consequat convallis quam. Vestibulum in neque mollis, volutpat urna rhoncus, sodales ante. Morbi a dolor eget ante luctus condimentum. Mauris eget fermentum odio. Sed efficitur vel eros a lacinia. Sed eget massa tristique, eleifend dui a, scelerisque lectus. Pellentesque quis ultricies erat.
+<div class="streak-container" style="display:flex; flex-direction:column; align-items:center; gap:20px;">
 
-Sed imperdiet gravida viverra. Fusce nulla sapien, luctus sed purus nec, bibendum suscipit nisl. Phasellus quis odio quam. In nec blandit quam. Cras non finibus quam, non scelerisque leo. Quisque aliquet, libero sed tempus maximus, tortor ante iaculis ligula, non blandit nulla mi mattis nisl. Quisque eget ullamcorper mi, a interdum mi. Integer volutpat sagittis pulvinar. Donec malesuada congue sapien, vitae pretium arcu.
+    <div class="tab-container" style="display:flex; gap:10px;">
+        <div class="tab active" data-tab="yourStreak" style="cursor:pointer;">Your Streak</div>
+        <div class="tab" data-tab="friends" style="cursor:pointer;">Friends</div>
+    </div>
 
-Donec bibendum erat ligula. Quisque mollis ipsum enim, sit amet fermentum augue hendrerit in. Cras aliquam, nibh a blandit dignissim, erat elit vulputate nibh, gravida dapibus orci enim vitae mi. Aenean elementum quam ante, eu vehicula augue blandit non. Aliquam vel feugiat arcu, ac blandit justo. Sed quis est auctor felis vehicula euismod. Nullam suscipit vel nisl eu pretium. Vestibulum eget magna rhoncus, rhoncus nisl ut, cursus justo. Suspendisse vulputate eros non ante mollis, nec scelerisque risus accumsan. Phasellus sollicitudin convallis ante vel dictum.
+    <div id="yourStreak" class="tab-content active" style="display:flex; flex-direction:column; align-items:center; gap:20px;">
 
-In sollicitudin sed eros et dictum. Mauris imperdiet nunc at vulputate suscipit. Mauris hendrerit, leo quis finibus blandit, ex eros imperdiet quam, ut ornare dui mi ut dolor. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Integer lobortis neque sit amet tincidunt consectetur. Aliquam rhoncus enim in fermentum commodo. Suspendisse potenti. Mauris porta ante at orci fermentum sagittis. Sed vel massa a lorem consequat pellentesque a a mauris. Vivamus lobortis porta est a semper. Suspendisse sollicitudin justo sed ipsum lobortis, vitae vestibulum lectus blandit. In pharetra sit amet neque nec fringilla.
+        <div class="streak-number-wrapper" style="display:flex; align-items:center; justify-content:center; gap:8px;">
+            <div class="streak-number" id="streakNumber" style="font-size:48px; font-weight:bold;">0</div>
+            <img src="{{ url_for('static', filename='streak.png') }}" alt="Streak" style="width:40px; height:40px;">
+        </div>
+
+        <div class="streak-message" id="streakMessage" style="font-size:18px;">Start your streak today!</div>
+        <div class="streak-history" id="streakHistory" style="display:flex; gap:10px;"></div>
+
+        <div style="font-size:20px; font-weight:500; margin-top:10px;">Choose your streak goal:</div>
+
+        <div class="streak-goal" style="display:flex; gap:15px; margin-top:5px;">
+            <button class="streak-button" id="goal7" onclick="setGoal(7)">7 Days</button>
+            <button class="streak-button" id="goal14" onclick="setGoal(14)">14 Days</button>
+            <button class="streak-button" id="goal28" onclick="setGoal(28)">28 Days</button>
+        </div>
+
+        <div class="streak-buttons">
+            <button class="streak-button" id="backButton">Back to studying</button>
+        </div>
+    </div>
+
+    <div id="friends" class="tab-content" style="display:none;">
+        <p style="text-align:center; margin-top:50px;">Feature coming soon!</p>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='streak.js') }}"></script>
+
 {% endblock %}

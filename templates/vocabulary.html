@@ -1,0 +1,34 @@
+{% extends "menu.html" %}
+{% block content %}
+
+<canvas id="matrixCanvas"></canvas>
+
+<div class="content-card" style="position: relative; z-index: 1;">
+    <h1>Vocabulary Practice</h1>
+    <p>Practice your words and improve your vocabulary skills.</p>
+    <button class="start" onclick="startPractice()">Practice</button>
+    <button class="start" style="margin-top: 15px;" onclick="reviewProgress()">Review Progress</button>
+</div>
+
+<script src="{{ url_for('static', filename='matrix.js') }}"></script>
+
+<script>
+function startPractice() {
+    window.location.href = "{{ url_for('vocabulary_practice') }}";
+}
+
+function reviewProgress() {
+    alert("STOP TAPPING INNOCENT BUTTONS!!");
+}
+</script>
+
+<style>
+#matrixCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}
+</style>
+
+{% endblock %}

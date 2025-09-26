@@ -11,9 +11,9 @@ def base():
 def lessons():
     return render_template('lessons.html')
 
-@app.route('/score')
+@app.route('/progress')
 def score():
-    return render_template('score.html')
+    return render_template('progress.html')
 
 @app.route('/streak')
 def streak():
@@ -27,6 +27,14 @@ def timed():
 def quests():
     return render_template('quests.html')
 
+@app.route('/vocabulary')
+def vocabulary():
+    return render_template('vocabulary.html')
+
+@app.route('/vocabulary_practice')
+def vocabulary_practice():
+    return render_template('vocabulary_practice.html')
+
 @app.route('/profile')
 def profile():
     return render_template('profile.html')
@@ -34,6 +42,10 @@ def profile():
 @app.route('/settings')
 def settings():
     return render_template('settings.html')
+
+@app.route('/ebrw_info')
+def ebrw_info():
+    return render_template('ebrw_info.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

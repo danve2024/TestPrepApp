@@ -1,0 +1,14 @@
+{% extends "menu.html" %}
+{% block content %}
+
+<div class="content-card" id="lessonCard" style="text-align: center;">
+    <h1>Vocabulary Practice</h1>
+    <p id="questionText"></p>
+    <div id="answerButtons" style="display: flex; flex-direction: column; gap: 15px; align-items: center;"></div>
+    <p id="feedback" style="margin-top: 15px; font-weight: bold;"></p>
+    <button class="start" id="backButton" style="margin-top: 20px; display: none;" onclick="backToVocabulary()">Back to Vocabulary</button>
+</div>
+
+<script src="{{ url_for('static', filename='vocabulary_practice_quiz.js') }}"></script>
+
+{% endblock %}

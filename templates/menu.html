@@ -9,33 +9,33 @@
 </head>
 <body>
     <header>
-        <a href="{{ url_for('score') }}">
+        <a href="{{ url_for('score') }}" class="header-item">
             <div class="coat">
                 <div class="score">1600</div>
                 <span>Your score</span>
             </div>
         </a>
-        <a href="{{ url_for('streak') }}">
+        <a href="{{ url_for('streak') }}" class="header-item">
             <div class="coat">
-                <div class="streak">5 <img class="fire" src="{{ url_for('static', filename='streak.png') }}"></div>
+                <div class="streak">
+                    1
+                    <img class="fire" src="{{ url_for('static', filename='streak.png') }}">
+                </div>
                 <div class="streak-sub">Streak</div>
             </div>
         </a>
-        <div class="theme-container">
-            <span class="theme-label">Dark Mode</span>
-            <label class="theme-switch">
-                <input type="checkbox" id="theme-toggle">
-                <span class="slider"></span>
-            </label>
-        </div>
+        <a href="{{ url_for('profile') }}" class="header-item">
+            <div class="coat">
+                <div class="profile-icon">
+                    <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile" style="width:32px;height:32px;border-radius:50%;">
+                </div>
+                <span>Profile</span>
+            </div>
+        </a>
     </header>
 
     <main>
-        <div class="content-card">
-            <h1>Welcome to Examlet!</h1>
-            <p>Practice your SAT skills with our interactive lessons and challenges.</p>
-            <p>Earn points, maintain your streak, and track your progress as you learn.</p>
-        </div>
+        {% block content %}{% endblock content %}
     </main>
 
     <footer>
@@ -51,16 +51,16 @@
                 Timed Practice
             </div>
         </a>
+        <a href="{{ url_for('vocabulary') }}">
+            <div class="footer_button">
+                <img src="{{ url_for('static', filename='vocabulary.png') }}">
+                Vocabulary
+            </div>
+        </a>
         <a href="{{ url_for('quests') }}">
             <div class="footer_button">
                 <img src="{{ url_for('static', filename='quests.png') }}">
                 Daily Quests
-            </div>
-        </a>
-        <a href="{{ url_for('profile') }}">
-            <div class="footer_button">
-                <img src="{{ url_for('static', filename='profile.png') }}">
-                Profile
             </div>
         </a>
         <a href="{{ url_for('settings') }}">

@@ -1,0 +1,53 @@
+{% extends "menu.html" %}
+
+{% block content %}
+<br>
+<div class="setting opposite-sides">
+    <input placeholder="First Name" value="Dany">
+    <input placeholder="Last Name" value="Well">
+    <input placeholder="Password" type="password" value="1234556">
+    <input placeholder="Email" type="email" value="danywell_top@gmail.com">
+</div>
+<div class="setting opposite-sides">
+    <span class="label">Dark Mode</span>
+    <label class="switch">
+        <input type="checkbox" id="theme-toggle">
+        <span class="slider"></span>
+    </label>
+</div>
+<div class="setting opposite-sides">
+    <span class="label">Sounds</span>
+    <label class="switch">
+        <input type="checkbox" id="sound-toggle">
+        <span class="slider"></span>
+    </label>
+</div>
+<div class="setting opposite-sides">
+    <span class="label">Haptics</span>
+    <label class="switch">
+        <input type="checkbox" id="haptic-toggle">
+        <span class="slider"></span>
+    </label>
+</div>
+<div class="setting opposite-sides">
+    <span class="label">Friends</span>
+    <label class="switch">
+        <input type="checkbox" id="friends-toggle">
+        <span class="slider"></span>
+    </label>
+</div>
+<div class="setting opposite-sides">
+    <span class="label">Notifications</span>
+    <label class="switch">
+        <input type="checkbox" id="notification-toggle">
+        <span class="slider"></span>
+    </label>
+</div>
+<div class="setting opposite-sides">
+    <span class="label">Emails</span>
+    <label class="switch">
+        <input type="checkbox" id="email-toggle">
+        <span class="slider"></span>
+    </label>
+</div>
+{% endblock %}
