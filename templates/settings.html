@@ -16,6 +16,13 @@
     </label>
 </div>
 <div class="setting opposite-sides">
+    <span class="label">Become super productive 😎</span>
+    <label class="switch">
+        <input type="checkbox" id="productivity-toggle">
+        <span class="slider"></span>
+    </label>
+</div>
+<div class="setting opposite-sides">
     <span class="label">Sounds</span>
     <label class="switch">
         <input type="checkbox" id="sound-toggle">
@@ -50,4 +57,5 @@
         <span class="slider"></span>
     </label>
 </div>
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 {% endblock %}

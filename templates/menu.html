@@ -12,14 +12,14 @@
         <a href="{{ url_for('score') }}" class="header-item">
             <div class="coat">
                 <div class="score">1600</div>
-                <span>Your score</span>
+                <span>Progress</span>
             </div>
         </a>
         <a href="{{ url_for('streak') }}" class="header-item">
             <div class="coat">
                 <div class="streak">
                     1
-                    <img class="fire" src="{{ url_for('static', filename='streak.png') }}">
+                    <img class="fire" src="{{ url_for('static', filename='logos/streak.png') }}">
                 </div>
                 <div class="streak-sub">Streak</div>
             </div>
@@ -27,7 +27,7 @@
         <a href="{{ url_for('profile') }}" class="header-item">
             <div class="coat">
                 <div class="profile-icon">
-                    <img src="{{ url_for('static', filename='profile.png') }}" alt="Profile" style="width:32px;height:32px;border-radius:50%;">
+                    <img src="{{ url_for('static', filename='logos/profile.png') }}" alt="Profile" style="width:32px;height:32px;border-radius:50%;">
                 </div>
                 <span>Profile</span>
             </div>
@@ -41,36 +41,42 @@
     <footer>
         <a href="{{ url_for('lessons') }}">
             <div class="footer_button">
-                <img src="{{ url_for('static', filename='lessons.png') }}">
+                <img src="{{ url_for('static', filename='logos/lessons.png') }}">
                 Lessons
             </div>
         </a>
         <a href="{{ url_for('timed') }}">
             <div class="footer_button">
-                <img src="{{ url_for('static', filename='timed.png') }}">
+                <img src="{{ url_for('static', filename='logos/timed.png') }}">
                 Timed Practice
             </div>
         </a>
         <a href="{{ url_for('vocabulary') }}">
             <div class="footer_button">
-                <img src="{{ url_for('static', filename='vocabulary.png') }}">
+                <img src="{{ url_for('static', filename='logos/vocabulary.png') }}">
                 Vocabulary
             </div>
         </a>
         <a href="{{ url_for('quests') }}">
             <div class="footer_button">
-                <img src="{{ url_for('static', filename='quests.png') }}">
+                <img src="{{ url_for('static', filename='logos/quests.png') }}">
                 Daily Quests
             </div>
         </a>
         <a href="{{ url_for('settings') }}">
             <div class="footer_button">
-                <img src="{{ url_for('static', filename='settings.png') }}">
+                <img src="{{ url_for('static', filename='logos/settings.png') }}">
                 Settings
             </div>
         </a>
     </footer>
 
-    <script src="{{ url_for('static', filename='theme_toggle.js') }}"></script>
+    <!-- Background music -->
+    <audio id="background-music" loop>
+        <source src="{{ url_for('static', filename='audio/MainTheme.mp3') }}" type="audio/mpeg">
+    </audio>
+
+    <script src="{{ url_for('static', filename='js/theme_toggle.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/music_control.js') }}"></script>
 </body>
 </html>

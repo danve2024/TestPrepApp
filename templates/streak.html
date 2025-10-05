@@ -12,7 +12,7 @@
 
         <div class="streak-number-wrapper" style="display:flex; align-items:center; justify-content:center; gap:8px;">
             <div class="streak-number" id="streakNumber" style="font-size:48px; font-weight:bold;">0</div>
-            <img src="{{ url_for('static', filename='streak.png') }}" alt="Streak" style="width:40px; height:40px;">
+            <img src="{{ url_for('static', filename='logos/streak.png') }}" alt="Streak" style="width:40px; height:40px;">
         </div>
 
         <div class="streak-message" id="streakMessage" style="font-size:18px;">Start your streak today!</div>
@@ -36,6 +36,6 @@
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='streak.js') }}"></script>
+<script src="{{ url_for('static', filename='js/streak.js') }}"></script>
 
 {% endblock %}
