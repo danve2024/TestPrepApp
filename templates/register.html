@@ -1,0 +1,17 @@
+{% extends "menu.html" %}
+
+{% block content %}
+<div class="content-card" style="width: 450px;">
+    <h1>Create Account</h1>
+    <form method="POST" action="{{ url_for('register') }}" style="width: 100%;">
+        <input type="text" id="first_name" name="first_name" placeholder="First Name" required>
+        <input type="email" id="email" name="email" placeholder="Email Address (Unique)" required>
+        <input type="text" id="username" name="username" placeholder="Choose a Username (Unique)" required>
+        <input type="password" id="password" name="password" placeholder="Create Password" required>
+        <button type="submit" class="start" style="width: 100%; margin: 10px 0; color: white;">
+            Register
+        </button>
+    </form>
+    <p style="margin-top: 20px; font-size: 14px;">Already have an account? <a href="{{ url_for('login') }}" style="color: var(--secondary-color); font-weight: bold;">Log In.</a></p>
+</div>
+{% endblock %}

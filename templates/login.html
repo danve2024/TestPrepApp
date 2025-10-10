@@ -1,0 +1,15 @@
+{% extends "menu.html" %}
+
+{% block content %}
+<div class="content-card">
+    <h1>Log In</h1>
+    <form method="POST" action="{{ url_for('login') }}">
+    <input type="text" id="username" name="username" placeholder="Username">
+    <input type="password" id="password" name="password" placeholder="Password">
+        <button type="submit" class="start">
+        Log In
+    </button>
+    </form>
+    <p style="margin-top: 20px; font-size: 14px;">Don't have an account? <a href="{{ url_for('register') }}" style="color: var(--primary-color); font-weight: bold;">Register here.</a></p>
+</div>
+{% endblock %}

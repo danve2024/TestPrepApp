@@ -1,14 +1,195 @@
 {% extends "menu.html" %}
 {% block content %}
 
-<div class="content-card" id="lessonCard" style="text-align: center;">
-    <h1>Vocabulary Practice</h1>
-    <p id="questionText"></p>
-    <div id="answerButtons" style="display: flex; flex-direction: column; gap: 15px; align-items: center;"></div>
-    <p id="feedback" style="margin-top: 15px; font-weight: bold;"></p>
-    <button class="start" id="backButton" style="margin-top: 20px; display: none;" onclick="backToVocabulary()">Back to Vocabulary</button>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+<!-- Audio elements for sound effects -->
+<audio id="correctSound" preload="auto">
+    <source src="{{ url_for('static', filename='audio/correct.mp3') }}" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+<audio id="incorrectSound" preload="auto">
+    <source src="{{ url_for('static', filename='audio/incorrect.mp3') }}" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+<audio id="finishSound" preload="auto">
+    <source src="{{ url_for('static', filename='audio/finish.mp3') }}" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+
+<div class="wide-content-card" id="lessonCard" style="text-align: center;">
+    <h1>Lesson 1</h1>
+
+    {% if quiz_complete %}
+        <div class="results-summary">
+            <h2>Quiz Complete!</h2>
+            <h3>Your Score: {{ score }}/{{ total_questions }} ({{ percentage }}%)</h3>
+            <p>{{ performance_msg }}</p>
+        </div>
+        <button class="start" onclick="window.location.href='/vocabulary'" style="margin-top: 20px;">
+            Back to Vocabulary
+        </button>
+
+    {% else %}
+        <div class="score-display" style="margin-bottom: 20px; font-weight: bold;">
+            Score: {{ score }}/{{ total_questions }}
+        </div>
+
+        <p id="questionText" style="font-size: 1.2em; font-weight: bold; margin-bottom: 20px;">
+            {{ question.question }}
+        </p>
+
+        {% if question.type == 'pairs_matching' %}
+            <!-- Pairs Matching Question -->
+            <form id="quizForm" class="card-box" method="POST" action="{{ url_for('vocabulary_answer') }}">
+                <div class="pairs-matching-container">
+                    <div class="words-column">
+                        <h3>Words</h3>
+                        {% for word in words %}
+                            <div class="word-item" data-word="{{ word }}">
+                                {{ word }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="definitions-column">
+                        <h3>Definitions</h3>
+                        {% for definition in definitions %}
+                            <div class="definition-item" data-definition="{{ definition }}">
+                                {{ definition }}
+                                <input type="hidden" name="pair_{{ definition }}" value="">
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Hidden fields for submitted pairs -->
+                {% for pair in question.pairs %}
+                    <input type="hidden" id="pair_{{ pair.word }}" name="pair_{{ pair.word }}" value="">
+                {% endfor %}
+
+                <button type="submit"
+                        id="submitButton"
+                        class="start"
+                        style="margin-top: 20px;"
+                        disabled>
+                    Submit Answer
+                </button>
+            </form>
+
+        {% elif question.type == 'fill_blank' %}
+            <!-- Duolingo-style Fill in the Blanks -->
+            <form id="quizForm" class="card-box" method="POST" action="{{ url_for('vocabulary_answer') }}">
+                <div class="sentence-container">
+                    {% set sentence_parts = question.question.split('________') %}
+                    <span class="sentence-part">{{ sentence_parts[0] }}</span>
+                    <div class="blank-space" id="blankSpace">
+                        {% if answered and selected_option %}
+                            <div class="selected-word-bubble selected-{% if feedback.is_correct %}correct{% else %}incorrect{% endif %}">
+                                {{ selected_option }}
+                            </div>
+                        {% elif answered and not feedback.is_correct %}
+                            <div class="selected-word-bubble selected-incorrect">
+                                {{ selected_option }}
+                            </div>
+                            <div class="correct-word-bubble">
+                                {{ correct_answer }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <span class="sentence-part">{{ sentence_parts[1] if sentence_parts|length > 1 }}</span>
+                </div>
+
+                <div class="word-bank" id="wordBank">
+                    {% for option in options %}
+                        <div class="word-bubble
+                                   {% if answered %}
+                                       {% if option == selected_option and not feedback.is_correct %}used-incorrect
+                                       {% elif option == selected_option and feedback.is_correct %}used-correct
+                                       {% elif option == correct_answer and not feedback.is_correct %}correct-answer{% endif %}
+                                   {% endif %}"
+                             data-word="{{ option }}"
+                             {% if answered %}style="pointer-events: none;"{% endif %}>
+                            {{ option }}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <input type="hidden" id="selected_option" name="selected_option" value="{{ selected_option or '' }}">
+
+                {% if not answered %}
+                <button type="submit"
+                        id="submitButton"
+                        class="start"
+                        style="margin-top: 20px;"
+                        {% if not selected_option %}disabled{% endif %}>
+                    Submit Answer
+                </button>
+                {% endif %}
+            </form>
+
+        {% else %}
+            <!-- Regular Multiple Choice Questions -->
+            <form id="quizForm" class="card-box" method="POST" action="{{ url_for('vocabulary_answer') }}">
+                {% for option in options %}
+                    <button type="button"
+                            class="option-button
+                                   {% if answered %}
+                                       {% if option == selected_option and not feedback.is_correct %}selected-incorrect
+                                       {% elif option == selected_option and feedback.is_correct %}selected-correct
+                                       {% elif option == correct_answer %}correct-answer{% endif %}
+                                   {% else %}
+                                       {% if option == selected_option %}selected{% endif %}
+                                   {% endif %}"
+                            onclick="selectOption('{{ option }}')"
+                            {% if answered %}disabled{% endif %}>
+                        {{ option }}
+                    </button>
+                {% endfor %}
+
+                <input type="hidden" id="selected_option" name="selected_option" value="{{ selected_option or '' }}">
+
+                {% if not answered %}
+                <button type="submit"
+                        id="submitButton"
+                        class="start"
+                        style="margin-top: 20px;"
+                        {% if not selected_option %}disabled{% endif %}>
+                    Submit Answer
+                </button>
+                {% endif %}
+            </form>
+        {% endif %}
+
+        {% if answered %}
+            <div id="feedback" style="margin-top: 15px; font-weight: bold;
+                 color: {% if feedback.is_correct %}green{% else %}red{% endif %};">
+                {% if feedback.is_correct %}
+                    ✓ Correct!
+                {% else %}
+                    ✗ Incorrect.
+                {% endif %}
+                {{ feedback.explanation }}
+            </div>
+
+            <form method="POST" action="{{ url_for('vocabulary_next') }}" style="margin-top: 20px;">
+                <button type="submit"
+                        class="start {% if not feedback.is_correct %}continue-incorrect{% endif %}">
+                    {% if current_index < total_questions - 1 %}
+                        Continue
+                    {% else %}
+                        See Results
+                    {% endif %}
+                </button>
+            </form>
+        {% elif question.type != 'pairs_matching' %}
+            <p style="margin-top: 15px; color: #666; font-style: italic;">
+                Select an option and click "Submit Answer"
+            </p>
+        {% endif %}
+    {% endif %}
 </div>
 
-<script src="{{ url_for('static', filename='js/vocabulary_practice_quiz.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vocabulary_practice_page.js') }}"></script>
 
 {% endblock %}

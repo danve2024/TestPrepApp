@@ -7,9 +7,10 @@
     </div>
 
     <div class="profile-fields">
-        <input type="text" id="firstName" placeholder="First Name">
-        <input type="text" id="lastName" placeholder="Surname">
-        <input type="text" id="nickname" placeholder="@Nickname">
+        <input placeholder="First Name" name="first_name" value="{{ session.get('first_name', 'No first name') }}">
+        <input placeholder="Last Name" name="last_name" value="{{ session.get('last_name', 'No last name') }}">
+        <input placeholder="Email" type="email" name="email" value="{{ session.get('email', 'No email') }}">
+        <input placeholder="Username" name="username" value="{{ session.get('username', 'No username') }}">
         <div class="account-type-label">Date of birth</div>
         <input type="date" id="birthDate" max="{{ today }}">
 

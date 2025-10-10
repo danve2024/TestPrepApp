@@ -2,60 +2,64 @@
 
 {% block content %}
 <br>
+<form method="POST">
 <div class="setting opposite-sides">
-    <input placeholder="First Name" value="Dany">
-    <input placeholder="Last Name" value="Well">
-    <input placeholder="Password" type="password" value="1234556">
-    <input placeholder="Email" type="email" value="danywell_top@gmail.com">
+    <input placeholder="First Name" name="first_name" value="{{ session.get('first_name', 'No first name') }}">
+    <input placeholder="Last Name" name="last_name" value="{{ session.get('last_name', 'No last name') }}">
+    <input placeholder="Email" type="email" name="email" value="{{ session.get('email', 'No email') }}">
+    <input placeholder="Username" name="username" value="{{ session.get('username', 'No username') }}">
 </div>
 <div class="setting opposite-sides">
     <span class="label">Dark Mode</span>
     <label class="switch">
-        <input type="checkbox" id="theme-toggle">
+        <input type="checkbox" id="theme-toggle" name="dark_mode" {% if settings and settings.dark_mode %}checked{% endif %}>
         <span class="slider"></span>
     </label>
 </div>
 <div class="setting opposite-sides">
     <span class="label">Become super productive 😎</span>
     <label class="switch">
-        <input type="checkbox" id="productivity-toggle">
+        <input type="checkbox" id="productivity-toggle" name="productivity_mode" {% if settings and settings.productivity_mode %}checked{% endif %}>
         <span class="slider"></span>
     </label>
 </div>
 <div class="setting opposite-sides">
     <span class="label">Sounds</span>
     <label class="switch">
-        <input type="checkbox" id="sound-toggle">
+        <input type="checkbox" id="sound-toggle" name="sounds" {% if settings and settings.sounds %}checked{% endif %}>
         <span class="slider"></span>
     </label>
 </div>
 <div class="setting opposite-sides">
     <span class="label">Haptics</span>
     <label class="switch">
-        <input type="checkbox" id="haptic-toggle">
+        <input type="checkbox" id="haptic-toggle" name="haptics" {% if settings and settings.haptics %}checked{% endif %}>
         <span class="slider"></span>
     </label>
 </div>
 <div class="setting opposite-sides">
     <span class="label">Friends</span>
     <label class="switch">
-        <input type="checkbox" id="friends-toggle">
+        <input type="checkbox" id="friends-toggle" name="friends" {% if settings and settings.friends %}checked{% endif %}>
         <span class="slider"></span>
     </label>
 </div>
 <div class="setting opposite-sides">
     <span class="label">Notifications</span>
     <label class="switch">
-        <input type="checkbox" id="notification-toggle">
+        <input type="checkbox" id="notification-toggle" name="notifications" {% if settings and settings.notifications %}checked{% endif %}>
         <span class="slider"></span>
     </label>
 </div>
 <div class="setting opposite-sides">
     <span class="label">Emails</span>
     <label class="switch">
-        <input type="checkbox" id="email-toggle">
+        <input type="checkbox" id="email-toggle" name="emails" {% if settings and settings.emails %}checked{% endif %}>
         <span class="slider"></span>
     </label>
 </div>
+</form>
+<button type="submit" class="start" style="margin-top: 20px;">Save Settings</button>
+<a href="{{ url_for('logout') }}"><button class="start" style="margin-top: 20px;">Log Out</button></a>
 <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 {% endblock %}

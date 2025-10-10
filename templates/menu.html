@@ -9,21 +9,22 @@
 </head>
 <body>
     <header>
-        <a href="{{ url_for('score') }}" class="header-item">
-            <div class="coat">
-                <div class="score">1600</div>
-                <span>Progress</span>
-            </div>
-        </a>
-        <a href="{{ url_for('streak') }}" class="header-item">
-            <div class="coat">
-                <div class="streak">
-                    1
-                    <img class="fire" src="{{ url_for('static', filename='logos/streak.png') }}">
-                </div>
-                <div class="streak-sub">Streak</div>
-            </div>
-        </a>
+        <!-- In the header section, replace static values with dynamic ones -->
+<a href="{{ url_for('score') }}" class="header-item">
+    <div class="coat">
+        <div class="score">{{ session.get('total_score', 1600) }}</div>
+        <span>Progress</span>
+    </div>
+</a>
+<a href="{{ url_for('streak') }}" class="header-item">
+    <div class="coat">
+        <div class="streak">
+            {{ session.get('current_streak', 1) }}
+            <img class="fire" src="{{ url_for('static', filename='logos/streak.png') }}">
+        </div>
+        <div class="streak-sub">Streak</div>
+    </div>
+</a>
         <a href="{{ url_for('profile') }}" class="header-item">
             <div class="coat">
                 <div class="profile-icon">
@@ -35,7 +36,17 @@
     </header>
 
     <main>
-        {% block content %}{% endblock content %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
     </main>
 
     <footer>
