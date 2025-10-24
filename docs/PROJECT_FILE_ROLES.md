@@ -104,3 +104,84 @@ This document summarizes the role of each major file/folder in the project.
 - UI is rendered by Jinja templates (`lesson.html`, `vocabulary_practice.html`, etc.).
 - Static assets provide styles, scripts, and sounds.
 - Session is kept lean for lessons by storing only IDs and rebuilding from DB, with deterministic shuffling for consistent UI between requests.
+
+## Per-file catalog
+
+Root
+- **run.py**: Flask app entrypoint; routing for auth, vocabulary practice, lessons, results; lesson deterministic shuffle; session management.
+- **question_bank.py**: SQLite adapter and import utilities for lessons; ensures DB; fetch by IDs/random; maps A–D to correct option text.
+- **authentication.py**: Helpers or endpoints for login/auth flows (session checks, user auth utilities).
+- **data.py**: Shared data helpers, constants, or legacy in-memory datasets used by parts of the app.
+- **email_verify_pg.py**: Email verification page/flow endpoints (send/verify codes, status, redirects).
+- **streaks_pg.py**: Streaks page/logic endpoints (calculating and displaying user streaks).
+- **wsgi.py**: WSGI entrypoint for deploying the Flask app under a WSGI server.
+- **script.sh**: Shell script for project tasks (e.g., setup/run scripts on compatible systems).
+- **nohup.out**: Log output from background process runs (not required for app logic).
+- **.DS_Store**: macOS metadata file (safe to ignore/delete).
+
+Databases (SQLite)
+- **login_info.db**: Stores login-related data (users/credentials metadata).
+- **progress_data.db**: Stores user progress, quiz scores, and related metrics.
+- **users_data.db**: Additional user profile/state data.
+- **question_bank.db**: Lessons question bank (questions, options A–D, correct letter, explanations, passages, difficulty, ids).
+
+Docs
+- **docs/PROJECT_FILE_ROLES.md**: This documentation file describing project files.
+
+App package
+- **app/config.py**: Application configuration helpers (env-based config, constants).
+- **app/context_processors.py**: Injects global variables/settings into all templates.
+- **app/services/email_service.py**: Email sending utilities (SMTP wrappers, templating hooks).
+- **app/routes/settings.py**: Settings-related routes or blueprint (user preferences, toggles, saving settings).
+- **app/data/questions.py**: Source questions/data structures for vocabulary or sample content.
+
+Templates
+- **templates/base.html**: Base layout wrapper (common head/body; CSS/JS includes).
+- **templates/welcome.html**: Landing/welcome page for first-time or general entry.
+- **templates/menu.html**: Main menu/dashboard page.
+- **templates/login.html**: Login page template.
+- **templates/register.html**: Registration page template.
+- **templates/profile.html**: User profile page.
+- **templates/progress.html**: Progress dashboard page.
+- **templates/quests.html**: Quests overview page.
+- **templates/settings.html**: Settings UI.
+- **templates/streak.html**: Streaks page UI.
+- **templates/verify_pending.html**: Email verification pending page.
+- **templates/vocabulary.html**: Vocabulary feature landing/setup page.
+- **templates/vocabulary_practice.html**: Vocabulary quiz page (in-memory questions, per-index option shuffle, feedback flow).
+- **templates/lessons.html**: Lessons hub page (list/enter lessons).
+- **templates/lessons_old.html**: Older lessons page (legacy, for reference or cleanup).
+- **templates/lesson.html**: Lesson quiz page (DB-backed questions; deterministic shuffle; feedback/results on same template).
+- **templates/ebrw_info.html**: EBRW informational page.
+- **templates/timed.html**: Timed practice/test page UI.
+
+Static assets
+- **static/css/base.css**: Global styles for layout/theme.
+- **static/css/practice.css**: Practice/quiz components (buttons, feedback states, layout helpers).
+- **static/css/lessons.css**: Lessons page-specific styles.
+- **static/css/profile.css**: Profile page styles.
+- **static/css/quests.css**: Quests page styles.
+- **static/css/settings.css**: Settings page styles.
+- **static/css/streak.css**: Streaks page styles.
+- **static/css/vocabulary.css**: Vocabulary page styles.
+- **static/js/theme_toggle.js**: Theme switch handling (light/dark).
+- **static/js/music_control.js**: Background music and SFX controls.
+- **static/js/soft_nav.js**: Soft navigation / PJAX-like helpers (navigate without full reloads).
+- **static/js/lessons.js**: Lessons page client behaviors.
+- **static/js/lessons_map.js**: Lesson map/visualization.
+- **static/js/matrix.js**: Visual effects/utility script.
+- **static/js/profile.js**: Profile page interactions.
+- **static/js/quests.js**: Quests interactions.
+- **static/js/settings.js**: Settings interactions.
+- **static/js/streak.js**: Streaks calculations/animations on client.
+- **static/js/vocabulary_practice.js**: Shared helpers for vocabulary practice.
+- **static/js/vocabulary_practice_page.js**: Vocabulary page orchestration (UI interactions).
+- **static/js/vocabulary_practice_quiz.js**: Vocabulary quiz interaction logic.
+- **static/audio/MainTheme.mp3**: Background theme.
+- **static/audio/correct.mp3, incorrect.mp3, finish.mp3, old_incorrect.mp3**: Feedback sounds.
+- **static/question_bank.pdf**: Source content for lessons parser.
+- **static/question_bank.txt**: Parsed/exported source for DB import.
+
+Generated / environment
+- **__pycache__/**: Python bytecode caches.
+- **.venv/**: Python virtual environment (dependencies installed here).
