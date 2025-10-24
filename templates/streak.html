@@ -1,5 +1,6 @@
 {% extends "menu.html" %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/streak.css') }}">
 
 <div class="streak-container" style="display:flex; flex-direction:column; align-items:center; gap:20px;">
 
@@ -11,12 +12,32 @@
     <div id="yourStreak" class="tab-content active" style="display:flex; flex-direction:column; align-items:center; gap:20px;">
 
         <div class="streak-number-wrapper" style="display:flex; align-items:center; justify-content:center; gap:8px;">
-            <div class="streak-number" id="streakNumber" style="font-size:48px; font-weight:bold;">0</div>
+            <div class="streak-number" id="streakNumber" style="font-size:48px; font-weight:bold;">{{ (streak.number if streak else (progress.current_streak if progress else 0)) }}</div>
             <img src="{{ url_for('static', filename='logos/streak.png') }}" alt="Streak" style="width:40px; height:40px;">
         </div>
 
-        <div class="streak-message" id="streakMessage" style="font-size:18px;">Start your streak today!</div>
-        <div class="streak-history" id="streakHistory" style="display:flex; gap:10px;"></div>
+        <div class="streak-message" id="streakMessage" style="font-size:18px;">
+            Goal: {{ (streak_data.goal.goal_days if streak_data and streak_data.goal and streak_data.goal.goal_days is not none else (streak.goal if streak else (progress.streak_goal if progress else 7))) }} days
+        </div>
+        <!-- Calendar header and grid -->
+        <div class="calendar">
+            <div class="cal-header">
+                <button id="calPrev" aria-label="Previous month">←</button>
+                <div id="calMonthLabel" class="cal-title"></div>
+                <button id="calNext" aria-label="Next month">→</button>
+            </div>
+            <div class="cal-grid" id="calGrid">
+                <div class="cal-weekday">Mon</div>
+                <div class="cal-weekday">Tue</div>
+                <div class="cal-weekday">Wed</div>
+                <div class="cal-weekday">Thu</div>
+                <div class="cal-weekday">Fri</div>
+                <div class="cal-weekday">Sat</div>
+                <div class="cal-weekday">Sun</div>
+                <!-- Days will be injected by JS -->
+            </div>
+            <div id="calTooltip" class="cal-tooltip" hidden></div>
+        </div>
 
         <div style="font-size:20px; font-weight:500; margin-top:10px;">Choose your streak goal:</div>
 
@@ -24,7 +45,9 @@
             <button class="streak-button" id="goal7" onclick="setGoal(7)">7 Days</button>
             <button class="streak-button" id="goal14" onclick="setGoal(14)">14 Days</button>
             <button class="streak-button" id="goal28" onclick="setGoal(28)">28 Days</button>
+            <button class="streak-button" id="saveGoalBtn" style="background:#1CB0F6;">Save</button>
         </div>
+        <div id="goalInfo" style="font-size:14px; opacity:0.8; text-align:center;"></div>
 
         <div class="streak-buttons">
             <button class="streak-button" id="backButton">Back to studying</button>
@@ -36,6 +59,7 @@
     </div>
 </div>
 
+<script id="streakData" type="application/json">{{ (streak_data or {}) | tojson }}</script>
 <script src="{{ url_for('static', filename='js/streak.js') }}"></script>
 
 {% endblock %}

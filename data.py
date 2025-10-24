@@ -179,6 +179,9 @@ class UsersDB(BaseDB):
                     Notifications BOOLEAN DEFAULT TRUE,
                     Emails BOOLEAN DEFAULT TRUE,
                     ProductivityMode BOOLEAN DEFAULT FALSE,
+                    WeekStartDay TEXT DEFAULT 'monday',
+                    DateFormat TEXT DEFAULT 'DD/MM/YYYY',
+                    FontScalePct INTEGER DEFAULT 100,
                     FOREIGN KEY (UserID) REFERENCES users(UserID)
                 );
 
@@ -192,6 +195,79 @@ class UsersDB(BaseDB):
                     TimesIncorrect INTEGER DEFAULT 0,
                     FOREIGN KEY (UserID) REFERENCES users(UserID)
                 );
+
+                CREATE TABLE IF NOT EXISTS STREAK (
+                    Username TEXT PRIMARY KEY,
+                    Number INTEGER DEFAULT 0,
+                    Goal INTEGER DEFAULT 7
+                );
+
+                CREATE TABLE IF NOT EXISTS FRIENDS (
+                    User1 TEXT NOT NULL,
+                    User2 TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS PROGRESS (
+                    Username TEXT PRIMARY KEY,
+                    Score1 INTEGER,
+                    Score2 INTEGER,
+                    Score3 INTEGER,
+                    EstimateEnglish INTEGER
+                );
+
+                CREATE TABLE IF NOT EXISTS OFFICIAL_RESULTS (
+                    ResultID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Username TEXT NOT NULL,
+                    ExamDate DATE,
+                    English INTEGER,
+                    Math INTEGER
+                );
+
+                CREATE TABLE IF NOT EXISTS PRACTICE_RESULTS (
+                    ResultID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Username TEXT NOT NULL,
+                    PracticeDate DATE,
+                    PracticeName TEXT,
+                    English INTEGER,
+                    Math INTEGER,
+                    QuestionNumbers TEXT,
+                    QuestionIDs TEXT,
+                    QuestionChoices TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS EXTERNAL_RESULTS (
+                    ResultID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Username TEXT NOT NULL,
+                    PracticeDate DATE,
+                    PracticeName TEXT,
+                    English INTEGER,
+                    Math INTEGER
+                );
+
+                CREATE TABLE IF NOT EXISTS SETTINGS (
+                    Username TEXT PRIMARY KEY,
+                    DarkMode BOOLEAN DEFAULT FALSE,
+                    BecomeSuperProductive BOOLEAN DEFAULT FALSE,
+                    Sounds BOOLEAN DEFAULT TRUE,
+                    Haptics BOOLEAN DEFAULT TRUE,
+                    Friends BOOLEAN DEFAULT TRUE,
+                    Notifications BOOLEAN DEFAULT TRUE,
+                    Emails BOOLEAN DEFAULT TRUE
+                );
+
+                CREATE TABLE IF NOT EXISTS QUESTS (
+                    QuestID INTEGER PRIMARY KEY,
+                    Label TEXT,
+                    MaxValue INTEGER
+                );
+
+                CREATE TABLE IF NOT EXISTS USERS_QUESTS (
+                    Username TEXT PRIMARY KEY,
+                    Quest1 INTEGER DEFAULT 0,
+                    Quest2 INTEGER DEFAULT 0,
+                    Quest3 INTEGER DEFAULT 0,
+                    Value INTEGER DEFAULT 0
+                );
             """
         }
     }
@@ -200,6 +276,35 @@ class UsersDB(BaseDB):
         """Initializes the multi-database manager with user configurations."""
         super().__init__(self.DB_CONFIGS)
         print("User-specific database logic ready.")
+        # Ensure email_verified_at column exists (SQLite best-effort)
+        try:
+            cols, _ = self.execute_sql(self.USERS_KEY, "PRAGMA table_info(users)")
+            # rows format: cid, name, type, notnull, dflt_value, pk
+            _, rows = self.execute_sql(self.USERS_KEY, "PRAGMA table_info(users)")
+            names = {r[1] for r in (rows or [])}
+            if 'email_verified_at' not in names:
+                self.execute_sql(self.USERS_KEY, "ALTER TABLE users ADD COLUMN email_verified_at TEXT")
+        except Exception as e:
+            print(f"[users] email_verified_at migration skipped: {e}")
+
+        # Best-effort migrations for additional user_settings fields
+        try:
+            _, rows = self.execute_sql(self.PROGRESS_KEY, "PRAGMA table_info(user_settings)")
+            names = {r[1] for r in (rows or [])}
+            if 'WeekStartDay' not in names:
+                self.execute_sql(self.PROGRESS_KEY, "ALTER TABLE user_settings ADD COLUMN WeekStartDay TEXT DEFAULT 'monday'")
+            if 'DateFormat' not in names:
+                self.execute_sql(self.PROGRESS_KEY, "ALTER TABLE user_settings ADD COLUMN DateFormat TEXT DEFAULT 'DD/MM/YYYY'")
+            if 'FontScalePct' not in names:
+                self.execute_sql(self.PROGRESS_KEY, "ALTER TABLE user_settings ADD COLUMN FontScalePct INTEGER DEFAULT 100")
+        except Exception as e:
+            print(f"[settings] migration skipped: {e}")
+
+        # Best-effort backfill: ensure a user_settings row exists for all existing users
+        try:
+            self.backfill_user_settings_all()
+        except Exception as e:
+            print(f"[settings] backfill skipped: {e}")
 
     # --- Core Data Modification (CRUD) ---
 
@@ -293,6 +398,25 @@ class UsersDB(BaseDB):
                 (user_id, test_date, total, ebrw, math)
             )
 
+        # Initialize SETTINGS row (by Username) if available
+        username = self.get_username_by_user_id(user_id)
+        if username:
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                "INSERT OR IGNORE INTO SETTINGS (Username) VALUES (?)",
+                (username,)
+            )
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                "INSERT OR IGNORE INTO STREAK (Username) VALUES (?)",
+                (username,)
+            )
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                "INSERT OR IGNORE INTO PROGRESS (Username, Score1, Score2, Score3, EstimateEnglish) VALUES (?, 1600, 800, 800, 800)",
+                (username,)
+            )
+
     # --- User Profile Methods ---
     def update_user_profile(self, user_id: int, first_name: str, last_name: str, nickname: str, birth_date: str,
                             account_type: str):
@@ -321,6 +445,16 @@ class UsersDB(BaseDB):
         return None
 
     # --- Progress and Score Methods ---
+    def get_username_by_user_id(self, user_id: int) -> Optional[str]:
+        cols, rows = self.execute_sql(
+            self.LOGIN_KEY,
+            "SELECT Username FROM logins WHERE UserID = ?",
+            (user_id,)
+        )
+        if rows and rows[0]:
+            return rows[0][0]
+        return None
+
     def get_user_progress(self, user_id: int) -> Optional[dict]:
         """Get user progress data including scores and streak."""
         cols, rows = self.execute_sql(
@@ -369,11 +503,24 @@ class UsersDB(BaseDB):
 
     def set_streak_goal(self, user_id: int, goal: int):
         """Set user streak goal."""
-        self.execute_sql(
+        # Ensure a row exists, then update. Avoid DB-specific UPSERT.
+        cols, rows = self.execute_sql(
             self.PROGRESS_KEY,
-            "UPDATE user_progress SET StreakGoal = ? WHERE UserID = ?",
-            (goal, user_id)
+            "SELECT 1 FROM user_progress WHERE UserID = ?",
+            (user_id,)
         )
+        if rows and len(rows) > 0:
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                "UPDATE user_progress SET StreakGoal = ? WHERE UserID = ?",
+                (goal, user_id)
+            )
+        else:
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                "INSERT INTO user_progress (UserID, StreakGoal) VALUES (?, ?)",
+                (user_id, goal)
+            )
 
     # --- Test Scores Methods ---
     def get_official_test_scores(self, user_id: int) -> List[dict]:
@@ -458,8 +605,96 @@ class UsersDB(BaseDB):
         """Get user settings."""
         cols, rows = self.execute_sql(
             self.PROGRESS_KEY,
-            "SELECT DarkMode, Sounds, Haptics, Friends, Notifications, Emails, ProductivityMode FROM user_settings WHERE UserID = ?",
+            "SELECT DarkMode, Sounds, Haptics, Friends, Notifications, Emails, ProductivityMode, WeekStartDay, DateFormat, FontScalePct FROM user_settings WHERE UserID = ?",
             (user_id,)
+        )
+        if rows and rows[0]:
+            return {
+                'dark_mode': bool(rows[0][0]),
+                'sounds': bool(rows[0][1]),
+                'haptics': bool(rows[0][2]),
+                'friends': bool(rows[0][3]),
+                'notifications': bool(rows[0][4]),
+                'emails': bool(rows[0][5]),
+                'productivity_mode': bool(rows[0][6]),
+                'week_start_day': rows[0][7] or 'monday',
+                'date_format': rows[0][8] or 'DD/MM/YYYY',
+                'font_scale_pct': int(rows[0][9] or 100)
+            }
+        return None
+
+    def update_user_settings(self, user_id: int, setting_name: str, value: bool):
+        """Update user settings."""
+        self.execute_sql(
+            self.PROGRESS_KEY,
+            f"UPDATE user_settings SET {setting_name} = ? WHERE UserID = ?",
+            (value, user_id)
+        )
+
+    def ensure_user_settings_row(self, user_id: int):
+        cols, rows = self.execute_sql(
+            self.PROGRESS_KEY,
+            "SELECT 1 FROM user_settings WHERE UserID = ?",
+            (user_id,)
+        )
+        if not rows:
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                "INSERT INTO user_settings (UserID) VALUES (?)",
+                (user_id,)
+            )
+
+    def upsert_user_settings(self, user_id: int, values: dict):
+        if not values:
+            return
+        sets = []
+        params = []
+        for k, v in values.items():
+            sets.append(f"{k} = ?")
+            params.append(v)
+        params.append(user_id)
+        sql = f"UPDATE user_settings SET {', '.join(sets)} WHERE UserID = ?"
+        self.execute_sql(self.PROGRESS_KEY, sql, tuple(params))
+
+    def hydrate_user_settings_from_legacy(self, user_id: int):
+        # Only hydrate if user_settings does not already exist to avoid overwriting saved settings
+        try:
+            existing = self.get_user_settings(user_id)
+            if existing:
+                return
+        except Exception:
+            pass
+        username = self.get_username_by_user_id(user_id)
+        if not username:
+            return
+        legacy = self.get_user_settings_by_username(username)
+        if not legacy:
+            return
+        # Map legacy logical keys to user_settings columns
+        mapped = {
+            'DarkMode': 1 if legacy.get('dark_mode') else 0,
+            'Sounds': 1 if legacy.get('sounds') else 0,
+            'Haptics': 1 if legacy.get('haptics') else 0,
+            'Friends': 1 if legacy.get('friends') else 0,
+            'Notifications': 1 if legacy.get('notifications') else 0,
+            'Emails': 1 if legacy.get('emails') else 0,
+            'ProductivityMode': 1 if legacy.get('productivity_mode') else 0,
+        }
+        self.upsert_user_settings(user_id, mapped)
+
+    def backfill_user_settings_all(self):
+        # Insert missing rows for all users with no user_settings
+        _, rows = self.execute_sql(self.USERS_KEY, "SELECT UserID FROM users")
+        for r in rows or []:
+            uid = r[0]
+            self.ensure_user_settings_row(uid)
+
+    # --- Username-based SETTINGS helpers (legacy table) ---
+    def get_user_settings_by_username(self, username: str) -> Optional[dict]:
+        cols, rows = self.execute_sql(
+            self.PROGRESS_KEY,
+            "SELECT DarkMode, Sounds, Haptics, Friends, Notifications, Emails, BecomeSuperProductive FROM SETTINGS WHERE Username = ?",
+            (username,)
         )
         if rows and rows[0]:
             return {
@@ -473,13 +708,28 @@ class UsersDB(BaseDB):
             }
         return None
 
-    def update_user_settings(self, user_id: int, setting_name: str, value: bool):
-        """Update user settings."""
-        self.execute_sql(
-            self.PROGRESS_KEY,
-            f"UPDATE user_settings SET {setting_name} = ? WHERE UserID = ?",
-            (value, user_id)
-        )
+    def update_user_settings_by_username(self, username: str, values: dict):
+        if not username:
+            return
+        # Map logical keys to legacy column names where different
+        colmap = {
+            'dark_mode': 'DarkMode',
+            'sounds': 'Sounds',
+            'haptics': 'Haptics',
+            'friends': 'Friends',
+            'notifications': 'Notifications',
+            'emails': 'Emails',
+            'productivity_mode': 'BecomeSuperProductive',
+        }
+        for k, v in values.items():
+            col = colmap.get(k)
+            if not col:
+                continue
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                f"UPDATE SETTINGS SET {col} = ? WHERE Username = ?",
+                (v, username)
+            )
 
     # --- Vocabulary Progress Methods ---
     def update_vocabulary_progress(self, user_id: int, word: str, is_correct: bool):

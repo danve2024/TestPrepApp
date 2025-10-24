@@ -1,8 +1,9 @@
 {% extends "menu.html" %}
 
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
 <br>
-<form method="POST">
+<form method="POST" id="settings-form">
 <div class="setting opposite-sides">
     <input placeholder="First Name" name="first_name" value="{{ session.get('first_name', 'No first name') }}">
     <input placeholder="Last Name" name="last_name" value="{{ session.get('last_name', 'No last name') }}">
@@ -38,6 +39,38 @@
     </label>
 </div>
 <div class="setting opposite-sides">
+    <span class="label">Week start day</span>
+    <select name="week_start_day" id="week-start-day" class="duo-select" style="min-width: 200px;">
+        {% set wsd = (settings.week_start_day if settings and settings.week_start_day else 'monday') %}
+        <option value="monday" {% if wsd == 'monday' %}selected{% endif %}>Monday</option>
+        <option value="tuesday" {% if wsd == 'tuesday' %}selected{% endif %}>Tuesday</option>
+        <option value="wednesday" {% if wsd == 'wednesday' %}selected{% endif %}>Wednesday</option>
+        <option value="thursday" {% if wsd == 'thursday' %}selected{% endif %}>Thursday</option>
+        <option value="friday" {% if wsd == 'friday' %}selected{% endif %}>Friday</option>
+        <option value="saturday" {% if wsd == 'saturday' %}selected{% endif %}>Saturday</option>
+        <option value="sunday" {% if wsd == 'sunday' %}selected{% endif %}>Sunday</option>
+    </select>
+</div>
+<div class="setting opposite-sides">
+    <span class="label">Date format</span>
+    <select id="date-format" name="date_format" class="duo-select" style="min-width: 200px;">
+        {% set df = (settings.date_format if settings and settings.date_format else 'DD/MM/YYYY') %}
+        <option value="DD/MM/YYYY" {% if df == 'DD/MM/YYYY' %}selected{% endif %}>DD/MM/YYYY</option>
+        <option value="MM/DD/YYYY" {% if df == 'MM/DD/YYYY' %}selected{% endif %}>MM/DD/YYYY</option>
+    </select>
+    
+</div>
+
+<div class="setting opposite-sides">
+    <span class="label">Text size</span>
+    <div style="display:flex; align-items:center; gap:8px; justify-content:flex-end;">
+        <span style="font-size:12px; opacity:0.8;">A</span>
+        <input type="hidden" id="font-scale-pct" name="font_scale_pct" value="{{ settings.font_scale_pct if settings and settings.font_scale_pct is not none else 100 }}">
+        <input type="range" id="text-size" min="90" max="120" step="10" value="{{ settings.font_scale_pct if settings and settings.font_scale_pct is not none else 100 }}" class="duo-range" style="width: 140px;">
+        <span style="font-size:16px;">A</span>
+    </div>
+</div>
+<div class="setting opposite-sides">
     <span class="label">Friends</span>
     <label class="switch">
         <input type="checkbox" id="friends-toggle" name="friends" {% if settings and settings.friends %}checked{% endif %}>
@@ -59,7 +92,36 @@
     </label>
 </div>
 </form>
-<button type="submit" class="start" style="margin-top: 20px;">Save Settings</button>
-<a href="{{ url_for('logout') }}"><button class="start" style="margin-top: 20px;">Log Out</button></a>
+<div class="settings-actions">
+  <button id="saveSettingsBtn" type="submit" form="settings-form" class="btn-secondary" disabled>Save Settings</button>
+  <a href="{{ url_for('logout') }}"><button class="btn-logout">Log Out</button></a>
+  </div>
 <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+<script>
+// Persist week start day to localStorage so calendar can pick it up immediately
+document.getElementById('week-start-day')?.addEventListener('change', function() {
+  try { localStorage.setItem('weekStartDay', this.value); } catch (e) {}
+});
+
+// Persist date format
+document.getElementById('date-format')?.addEventListener('change', function() {
+  try { localStorage.setItem('dateFormat', this.value); } catch (e) {}
+});
+
+// Text size slider: sets CSS variable --font-scale (90%..120%)
+(function initTextSize() {
+  const slider = document.getElementById('text-size');
+  const hidden = document.getElementById('font-scale-pct');
+  if (!slider) return;
+  const saved = parseInt(hidden?.value || '100', 10);
+  slider.value = saved;
+  const apply = (pct) => {
+    const scale = Math.max(90, Math.min(120, parseInt(pct,10))) / 100;
+    document.documentElement.style.setProperty('--font-scale', scale);
+    if (hidden) { hidden.value = String(Math.round(scale*100)); }
+  };
+  apply(saved);
+  slider.addEventListener('input', (e) => apply(e.target.value));
+})();
+</script>
 {% endblock %}

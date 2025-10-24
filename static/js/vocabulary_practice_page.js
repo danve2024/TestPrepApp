@@ -1,314 +1,364 @@
-// Audio elements
-const correctSound = document.getElementById('correctSound');
-const incorrectSound = document.getElementById('incorrectSound');
+// Vocabulary practice page functionality
 
-// Function to play sound based on answer
-function playAnswerSound(isCorrect) {
-    // Reset audio to start
-    correctSound.currentTime = 0;
-    incorrectSound.currentTime = 0;
-
-    // Stop any currently playing audio
-    correctSound.pause();
-    incorrectSound.pause();
-
-    // Play the appropriate sound
-    if (isCorrect) {
-        correctSound.play().catch(e => {
-            console.log('Audio play failed:', e);
-        });
-    } else {
-        incorrectSound.play().catch(e => {
-            console.log('Audio play failed:', e);
-        });
-    }
-}
-
-// For regular multiple choice questions
+// Multiple choice selection
 function selectOption(option) {
+    document.getElementById('selected_option').value = option;
+    
+    // Remove selected class from all buttons
     document.querySelectorAll('.option-button').forEach(btn => {
         btn.classList.remove('selected');
     });
-
+    
+    // Add selected class to clicked button
     event.target.classList.add('selected');
-    document.getElementById('selected_option').value = option;
+    
+    // Enable submit button
     document.getElementById('submitButton').disabled = false;
 }
 
-// For Duolingo-style fill in the blanks
-function selectWord(word) {
-    // Don't proceed if already answered or during animation
-    if (document.querySelector('.answered') || document.querySelector('.flying-word')) {
-        return;
+// Matching pairs functionality aligned with lesson page
+class MatchingGame {
+    constructor() {
+        this.selectedWord = null;
+        this.selectedDefinition = null;
+        this.matches = new Map();
+        this.correctPairs = new Map();
+        this.mistakesAllowed = 1; // one mistake allowed; second mistake auto-fails
+        this.mistakesMade = 0;
+
+        this.container = document.querySelector('.pairs-matching-container');
+        this.svg = this.container ? this.container.querySelector('.match-lines-overlay') : null;
+
+        this.init();
     }
 
-    const blankSpace = document.getElementById('blankSpace');
-    const selectedOption = document.getElementById('selected_option');
+    init() {
+        this.loadCorrectPairs();
+        this.updateSubmitButton();
+    }
 
-    // Clear previous selection
-    blankSpace.innerHTML = '';
-    selectedOption.value = word;
-
-    // Create flying word effect
-    const wordBubble = event.target;
-    const wordRect = wordBubble.getBoundingClientRect();
-    const blankRect = blankSpace.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-    // Create flying element
-    const flyingWord = document.createElement('div');
-    flyingWord.className = 'word-bubble flying-word';
-    flyingWord.textContent = word;
-    flyingWord.style.position = 'fixed';
-    flyingWord.style.left = wordRect.left + 'px';
-    flyingWord.style.top = (wordRect.top + scrollTop) + 'px';
-    flyingWord.style.width = wordRect.width + 'px';
-    flyingWord.style.transform = 'scale(1)';
-    flyingWord.style.zIndex = '1000';
-    flyingWord.style.transition = 'none';
-    flyingWord.style.pointerEvents = 'none';
-
-    // Copy all styles from the original bubble
-    flyingWord.style.background = getComputedStyle(wordBubble).background;
-    flyingWord.style.color = getComputedStyle(wordBubble).color;
-    flyingWord.style.borderRadius = getComputedStyle(wordBubble).borderRadius;
-    flyingWord.style.fontWeight = getComputedStyle(wordBubble).fontWeight;
-    flyingWord.style.boxShadow = getComputedStyle(wordBubble).boxShadow;
-    flyingWord.style.fontSize = getComputedStyle(wordBubble).fontSize;
-    flyingWord.style.padding = getComputedStyle(wordBubble).padding;
-
-    document.body.appendChild(flyingWord);
-
-    // Disable all word bubbles during animation
-    document.querySelectorAll('.word-bubble').forEach(bubble => {
-        if (!bubble.classList.contains('flying-word')) {
-            bubble.style.pointerEvents = 'none';
-            bubble.style.opacity = '0.6';
+    loadCorrectPairs() {
+        const questionData = window.questionData || {};
+        if (questionData.pairs) {
+            questionData.pairs.forEach(pair => this.correctPairs.set(pair.word, pair.definition));
         }
-    });
-
-    // Force reflow
-    flyingWord.offsetHeight;
-
-    // Animate to blank space
-    flyingWord.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
-    flyingWord.style.left = (blankRect.left + (blankRect.width - wordRect.width) / 2) + 'px';
-    flyingWord.style.top = (blankRect.top + scrollTop) + 'px';
-    flyingWord.style.transform = 'scale(0.9)';
-
-    setTimeout(() => {
-        flyingWord.remove();
-
-        // Add word to blank space
-        const selectedWord = document.createElement('div');
-        selectedWord.className = 'selected-word-bubble';
-        selectedWord.textContent = word;
-        blankSpace.appendChild(selectedWord);
-
-        // Enable submit button
-        document.getElementById('submitButton').disabled = false;
-
-        // Re-enable word bubbles (if not answered)
-        if (!document.querySelector('.answered')) {
-            document.querySelectorAll('.word-bubble').forEach(bubble => {
-                if (!bubble.classList.contains('flying-word') &&
-                    !bubble.classList.contains('used-correct') &&
-                    !bubble.classList.contains('used-incorrect') &&
-                    !bubble.classList.contains('correct-answer')) {
-                    bubble.style.pointerEvents = 'auto';
-                    bubble.style.opacity = '1';
-                }
-            });
-        }
-
-        // Add bounce animation to the placed word
-        selectedWord.style.animation = 'bounceIn 0.5s ease-out';
-    }, 600);
-}
-
-// For pairs matching
-let selectedWord = null;
-let selectedDefinition = null;
-
-function selectMatchingItem(element) {
-    if (element.classList.contains('word-item')) {
-        // Select word
-        document.querySelectorAll('.word-item').forEach(item => {
-            item.classList.remove('selected');
-        });
-        element.classList.add('selected');
-        selectedWord = element.getAttribute('data-word');
-    } else if (element.classList.contains('definition-item')) {
-        // Select definition
-        document.querySelectorAll('.definition-item').forEach(item => {
-            item.classList.remove('selected');
-        });
-        element.classList.add('selected');
-        selectedDefinition = element.getAttribute('data-definition');
     }
 
-    // Check if we have both selected and try to match
-    if (selectedWord && selectedDefinition) {
-        // Store the pair
-        document.getElementById(`pair_${selectedWord}`).value = selectedDefinition;
-
-        // Visual feedback
-        const wordElement = document.querySelector(`.word-item[data-word="${selectedWord}"]`);
-        const defElement = document.querySelector(`.definition-item[data-definition="${selectedDefinition}"]`);
-
-        wordElement.classList.add('matched');
-        defElement.classList.add('matched');
-
-        // Add connection line animation
-        createConnectionLine(wordElement, defElement);
-
-        // Reset selection
-        selectedWord = null;
-        selectedDefinition = null;
-        document.querySelectorAll('.word-item, .definition-item').forEach(item => {
-            item.classList.remove('selected');
-        });
-
-        // Check if all pairs are matched
-        checkAllPairsMatched();
+    selectWord(wordElement) {
+        if (wordElement.classList.contains('matched') || wordElement.classList.contains('used')) return;
+        this.clearSelections();
+        this.selectedWord = wordElement;
+        wordElement.classList.add('selected');
+        if (this.selectedDefinition) this.tryMatch();
     }
-}
 
-function createConnectionLine(wordElement, defElement) {
-    const wordRect = wordElement.getBoundingClientRect();
-    const defRect = defElement.getBoundingClientRect();
-    const container = document.querySelector('.pairs-matching-container');
-
-    const line = document.createElement('div');
-    line.className = 'connection-line';
-    line.style.position = 'absolute';
-    line.style.left = (wordRect.right - container.getBoundingClientRect().left) + 'px';
-    line.style.top = (wordRect.top + wordRect.height / 2 - container.getBoundingClientRect().top) + 'px';
-    line.style.width = '0px';
-    line.style.height = '2px';
-    line.style.backgroundColor = '#4caf50';
-    line.style.transformOrigin = 'left center';
-    line.style.transition = 'width 0.4s ease-out';
-    line.style.zIndex = '1';
-
-    container.style.position = 'relative';
-    container.appendChild(line);
-
-    // Calculate line length and angle
-    const deltaX = defRect.left - wordRect.right;
-    const deltaY = (defRect.top + defRect.height / 2) - (wordRect.top + wordRect.height / 2);
-    const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
-
-    line.style.width = length + 'px';
-    line.style.transform = `rotate(${angle}deg)`;
-
-    // Remove line after animation
-    setTimeout(() => {
-        line.style.opacity = '0.7';
-    }, 1000);
-}
-
-function checkAllPairsMatched() {
-    const allWords = document.querySelectorAll('.word-item');
-    const allMatched = Array.from(allWords).every(word => word.classList.contains('matched'));
-
-    if (allMatched) {
-        document.getElementById('submitButton').disabled = false;
+    selectDefinition(definitionElement) {
+        if (definitionElement.classList.contains('matched') || definitionElement.classList.contains('used')) return;
+        this.clearSelections();
+        this.selectedDefinition = definitionElement;
+        definitionElement.classList.add('selected');
+        if (this.selectedWord) this.tryMatch();
     }
-}
 
-// Function to initialize word bank click events
-function initializeWordBank() {
-    const wordBubbles = document.querySelectorAll('#wordBank .word-bubble');
+    clearSelections() {
+        document.querySelectorAll('.match-item.selected').forEach(item => item.classList.remove('selected'));
+    }
 
-    wordBubbles.forEach(bubble => {
-        // Only add event listeners to interactive bubbles
-        if (!bubble.classList.contains('used-correct') &&
-            !bubble.classList.contains('used-incorrect') &&
-            !bubble.classList.contains('correct-answer')) {
+    tryMatch() {
+        if (!(this.selectedWord && this.selectedDefinition)) return;
+        const word = this.selectedWord.dataset.value;
+        const definition = this.selectedDefinition.dataset.value;
+        const isCorrect = this.correctPairs.get(word) === definition;
 
-            // Remove any existing event listeners by cloning
-            const newBubble = bubble.cloneNode(true);
-            bubble.parentNode.replaceChild(newBubble, bubble);
-        }
-    });
+        this.matches.set(word, definition);
+        const hiddenInput = document.getElementById(`pair_${word}`);
+        if (hiddenInput) hiddenInput.value = definition;
 
-    // Re-select after cloning and add fresh event listeners
-    const freshBubbles = document.querySelectorAll('#wordBank .word-bubble');
+        this.selectedWord.classList.remove('selected');
+        this.selectedDefinition.classList.remove('selected');
 
-    freshBubbles.forEach(bubble => {
-        if (!bubble.classList.contains('used-correct') &&
-            !bubble.classList.contains('used-incorrect') &&
-            !bubble.classList.contains('correct-answer')) {
-
-            bubble.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const word = this.getAttribute('data-word');
-                if (word) {
-                    selectWord(word);
-                }
-            });
-
-            // Add visual feedback
-            bubble.style.cursor = 'pointer';
-            bubble.style.opacity = '1';
+        if (isCorrect) {
+            this.selectedWord.classList.add('matched', 'correct');
+            this.selectedDefinition.classList.add('matched', 'correct');
+            this.playSound('correctSound');
         } else {
-            // Make non-interactive bubbles look disabled
-            bubble.style.cursor = 'default';
-            bubble.style.opacity = '0.6';
+            this.selectedWord.classList.add('matched', 'incorrect');
+            this.selectedDefinition.classList.add('matched', 'incorrect');
+            this.mistakesMade++;
+            this.playSound('incorrectSound');
+            // First mistake: reset the question for a fresh attempt
+            if (this.mistakesMade === 1) {
+                setTimeout(() => this.resetExercise(), 600);
+            }
+            // Second mistake: auto-submit as incorrect
+            else if (this.mistakesMade > this.mistakesAllowed) {
+                this.autoSubmitIncorrect();
+            }
         }
-    });
-    // Also play sound when form is submitted (for immediate feedback)
-    document.addEventListener('submit', function(e) {
-    if (e.target && e.target.id === 'quizForm') {
-        // This will play the sound when the page reloads with results
-        // The actual sound will be played in DOMContentLoaded when the feedback is shown
+
+        this.selectedWord = null;
+        this.selectedDefinition = null;
+        this.updateSubmitButton();
+
+        // Draw or redraw lines after every match
+        this.redrawLines();
     }
-});
+
+    playSound(id) {
+        const sound = document.getElementById(id);
+        if (sound) { sound.currentTime = 0; sound.play().catch(() => {}); }
+    }
+
+    redrawLines() {
+        if (!this.svg) return;
+        const setSvgSize = () => {
+            const rect = this.container.getBoundingClientRect();
+            this.svg.setAttribute('width', rect.width);
+            this.svg.setAttribute('height', rect.height);
+            this.svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+        };
+        const anchorOf = (el, side) => {
+            const r = el.getBoundingClientRect();
+            const c = this.container.getBoundingClientRect();
+            const edgePad = 10; // keep a bit inside the card to avoid clipping under borders
+            const x = side === 'right' ? (r.left - c.left + r.width - edgePad) : (r.left - c.left + edgePad);
+            const y = (r.top - c.top) + r.height / 2;
+            return { x, y };
+        };
+        const drawSteppedPath = (a, b, color, offsetPx = 0) => {
+            const midX = (a.x + b.x) / 2 + offsetPx;
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const d = `M ${a.x} ${a.y} L ${midX} ${a.y} L ${midX} ${b.y} L ${b.x} ${b.y}`;
+            path.setAttribute('d', d);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', color);
+            path.setAttribute('stroke-width', '5');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+            this.svg.appendChild(path);
+        };
+        const offsetForIndex = (idx) => {
+            // Alternate offsets to distinguish overlapping paths
+            const step = 12; // px, a bit tighter since we anchor to inner edges
+            const pattern = [0, -step, step, -2*step, 2*step, -3*step, 3*step];
+            return pattern[idx % pattern.length];
+        };
+        setSvgSize();
+        while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild);
+        const wordItems = Array.from(document.querySelectorAll('.word-item'));
+        const defItems = Array.from(document.querySelectorAll('.definition-item'));
+        const totalW = wordItems.length, totalD = defItems.length;
+        let i = 0;
+        this.matches.forEach((defVal, wordVal) => {
+            const wEl = document.querySelector(`.word-item[data-value="${CSS.escape(wordVal)}"]`);
+            const dEl = document.querySelector(`.definition-item[data-value="${CSS.escape(defVal)}"]`);
+            if (!wEl || !dEl) return;
+            const a = anchorOf(wEl, 'right');
+            const b = anchorOf(dEl, 'left');
+            const wIndex = wordItems.indexOf(wEl);
+            const dIndex = defItems.indexOf(dEl);
+            const correct = wEl.classList.contains('correct') && dEl.classList.contains('correct');
+            const color = correct ? '#4caf50' : (wEl.classList.contains('incorrect') || dEl.classList.contains('incorrect') ? '#f44336' : '#1CB0F6');
+            const offset = offsetForIndex(i++);
+            drawSteppedPath(a, b, color, offset);
+        });
+    }
+
+    autoSubmitIncorrect() {
+        // Ensure hidden inputs reflect current matches; unmatched remain empty
+        this.matches.forEach((defn, word) => {
+            const hiddenInput = document.getElementById(`pair_${word}`);
+            if (hiddenInput) hiddenInput.value = defn;
+        });
+        const form = document.getElementById('quizForm');
+        if (form) { form.submit(); }
+    }
+
+    resetExercise() {
+        this.matches.clear();
+        document.querySelectorAll('.match-item').forEach(item => item.classList.remove('matched', 'correct', 'incorrect', 'used'));
+        document.querySelectorAll('input[id^="pair_"]').forEach(input => { input.value = ''; });
+        const submitButton = document.getElementById('submitButton');
+        if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Check Answers'; submitButton.style.backgroundColor = '#58CC02'; }
+    }
+
+    updateSubmitButton() {
+        const submitButton = document.getElementById('submitButton');
+        const totalWords = document.querySelectorAll('.word-item').length;
+        if (!submitButton) return;
+        const allMatched = this.matches.size === totalWords;
+        const withinMistakeLimit = this.mistakesMade <= this.mistakesAllowed;
+        submitButton.disabled = !allMatched || !withinMistakeLimit;
+        if (allMatched && !withinMistakeLimit) {
+            submitButton.textContent = 'Too Many Mistakes';
+            submitButton.style.backgroundColor = '#f44336';
+        } else if (allMatched) {
+            submitButton.textContent = 'Check Answers';
+            submitButton.style.backgroundColor = '#58CC02';
+        }
+    }
 }
 
-// Initialize all interactions when DOM is loaded
+function setupFillBlank() {
+    const wordBubbles = document.querySelectorAll('.word-bubble');
+    const blankSpace = document.getElementById('blankSpace');
+    const selectedOptionInput = document.getElementById('selected_option');
+    
+    wordBubbles.forEach(bubble => {
+        bubble.addEventListener('click', function() {
+            if (this.style.pointerEvents === 'none') return;
+            
+            const word = this.getAttribute('data-word');
+            selectedOptionInput.value = word;
+            
+            // Clear blank space
+            blankSpace.innerHTML = '';
+            
+            // Create flying word effect
+            const flyingWord = this.cloneNode(true);
+            flyingWord.classList.add('flying-word');
+            flyingWord.style.position = 'absolute';
+            flyingWord.style.left = this.getBoundingClientRect().left + 'px';
+            flyingWord.style.top = this.getBoundingClientRect().top + 'px';
+            
+            document.body.appendChild(flyingWord);
+            
+            // Animate to blank space
+            const blankRect = blankSpace.getBoundingClientRect();
+            const finalLeft = blankRect.left + (blankRect.width - flyingWord.offsetWidth) / 2;
+            const finalTop = blankRect.top + (blankRect.height - flyingWord.offsetHeight) / 2;
+            
+            flyingWord.style.transition = 'all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+            flyingWord.style.left = finalLeft + 'px';
+            flyingWord.style.top = finalTop + 'px';
+            flyingWord.style.transform = 'scale(1.2)';
+            
+            setTimeout(() => {
+                blankSpace.appendChild(this.cloneNode(true));
+                document.body.removeChild(flyingWord);
+                
+                // Enable submit button
+                document.getElementById('submitButton').disabled = false;
+            }, 500);
+        });
+    });
+}
+
+// Sound effects
+function playSound(soundId) {
+    const sound = document.getElementById(soundId);
+    if (sound) {
+        sound.currentTime = 0;
+        sound.play().catch(e => console.log('Audio play failed:', e));
+    }
+}
+
+// Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize pairs matching if needed
-    const wordItems = document.querySelectorAll('.word-item');
-    const definitionItems = document.querySelectorAll('.definition-item');
-
-    if (wordItems.length > 0) {
-        wordItems.forEach(item => {
-            item.addEventListener('click', function() {
-                selectMatchingItem(this);
-            });
-        });
-
-        definitionItems.forEach(item => {
-            item.addEventListener('click', function() {
-                selectMatchingItem(this);
-            });
-        });
+    // Initialize matching game if pairs-matching
+    if (document.querySelector('.pairs-matching-container') && typeof answered !== 'undefined') {
+        // question data injected below
+        if (!window.answered) {
+            window.matchingGame = new MatchingGame();
+            // Redraw on resize/scroll
+            const redraw = () => window.matchingGame && window.matchingGame.redrawLines();
+            window.addEventListener('resize', redraw);
+            window.addEventListener('scroll', redraw, true);
+        } else {
+            // Review mode: draw all submitted pairs; stepped only for opposite-angle (1st<->4th), else straight
+            const container = document.querySelector('.pairs-matching-container');
+            const svg = container ? container.querySelector('.match-lines-overlay') : null;
+            if (container && svg && window.selectedPairs) {
+                const setSvgSize = () => {
+                    const rect = container.getBoundingClientRect();
+                    svg.setAttribute('width', rect.width);
+                    svg.setAttribute('height', rect.height);
+                    svg.setAttribute('viewBox', `0 0 ${rect.width} ${rect.height}`);
+                };
+                const centerOf = (el) => {
+                    const r = el.getBoundingClientRect();
+                    const c = container.getBoundingClientRect();
+                    return { x: (r.left - c.left) + r.width / 2, y: (r.top - c.top) + r.height / 2 };
+                };
+                const drawAll = () => {
+                    setSvgSize();
+                    while (svg.firstChild) svg.removeChild(svg.firstChild);
+                    const wordItems = Array.from(document.querySelectorAll('.word-item'));
+                    const defItems = Array.from(document.querySelectorAll('.definition-item'));
+                    const totalW = wordItems.length, totalD = defItems.length;
+                    Object.keys(window.selectedPairs || {}).forEach(word => {
+                        const def = window.selectedPairs[word];
+                        const wEl = document.querySelector(`.word-item[data-value="${CSS.escape(word)}"]`);
+                        const dEl = document.querySelector(`.definition-item[data-value="${CSS.escape(def)}"]`);
+                        if (!wEl || !dEl) return;
+                        const a = centerOf(wEl);
+                        const b = centerOf(dEl);
+                        const wIndex = wordItems.indexOf(wEl);
+                        const dIndex = defItems.indexOf(dEl);
+                        const correct = wEl.classList.contains('correct') && dEl.classList.contains('correct');
+                        const color = correct ? '#4caf50' : '#f44336';
+                        if ((totalW >= 4 && totalD >= 4) && ((wIndex === 0 && dIndex === 3) || (wIndex === 3 && dIndex === 0))) {
+                            const midX = (a.x + b.x) / 2;
+                            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                            const dPath = `M ${a.x} ${a.y} L ${midX} ${a.y} L ${midX} ${b.y} L ${b.x} ${b.y}`;
+                            path.setAttribute('d', dPath);
+                            path.setAttribute('fill', 'none');
+                            path.setAttribute('stroke', color);
+                            path.setAttribute('stroke-width', '5');
+                            path.setAttribute('stroke-linecap', 'round');
+                            path.setAttribute('stroke-linejoin', 'round');
+                            svg.appendChild(path);
+                        } else {
+                            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                            line.setAttribute('x1', a.x);
+                            line.setAttribute('y1', a.y);
+                            line.setAttribute('x2', b.x);
+                            line.setAttribute('y2', b.y);
+                            line.setAttribute('stroke', color);
+                            line.setAttribute('stroke-width', '4');
+                            line.setAttribute('stroke-linecap', 'round');
+                            svg.appendChild(line);
+                        }
+                    });
+                };
+                drawAll();
+                window.addEventListener('resize', drawAll);
+                window.addEventListener('scroll', drawAll, true);
+            }
+        }
     }
-
-    // Initialize word bank interactions for fill-in-the-blanks
-    const wordBank = document.getElementById('wordBank');
-    if (wordBank) {
-        initializeWordBank();
+    
+    // Setup fill in the blanks if present
+    if (document.getElementById('blankSpace')) {
+        setupFillBlank();
     }
-
-    // Play sound if we're on an answered question
-    const feedbackElement = document.getElementById('feedback');
-    if (feedbackElement) {
-        const isCorrect = feedbackElement.style.color === 'green' ||
-                         feedbackElement.textContent.includes('✓');
-        playAnswerSound(isCorrect);
+    
+    // Add sound effects for feedback
+    const feedback = document.getElementById('feedback');
+    if (feedback) {
+        if (feedback.style.color === 'green') {
+            playSound('correctSound');
+        } else if (feedback.style.color === 'red') {
+            playSound('incorrectSound');
+        }
+    }
+    
+    // Play finish sound if quiz is complete
+    if (document.querySelector('.results-summary')) {
+        playSound('finishSound');
     }
 });
 
-// Also play sound when form is submitted (for immediate feedback)
-document.addEventListener('submit', function(e) {
-    if (e.target && e.target.id === 'quizForm') {
-        // This will play the sound when the page reloads with results
-        // The actual sound will be played in DOMContentLoaded when the feedback is shown
-    }
+// Form submission handling
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const submitButton = this.querySelector('button[type="submit"]');
+            if (submitButton && submitButton.disabled) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
 });

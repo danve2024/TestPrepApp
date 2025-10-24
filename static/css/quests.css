@@ -1,0 +1,17 @@
+/* Quests page styles */
+
+/* Quest card container */
+.quest-card { align-items: center; background-color: var(--card-color); border-radius: 16px; padding: 20px; margin: 15px; width: 100%; max-width: 400px; box-shadow: 0 6px 12px var(--shadow-color); text-align: left; transition: transform var(--transition-speed), box-shadow var(--transition-speed); }
+.quest-card:hover { transform: translateY(-3px); box-shadow: 0 8px 16px var(--shadow-color); }
+.quest-card h2 { font-size: calc(18px * var(--font-scale)); margin-bottom: 10px; }
+
+/* Quest progress bar */
+.quest-progress { position: relative; width: 100%; height: 20px; background-color: #ddd; border-radius: 12px; overflow: hidden; margin-top: 8px; margin-bottom: 6px; }
+.quest-progress-fill { height: 100%; width: 0%; border-radius: 12px; transition: width 0.8s ease-in-out, filter 0.2s; }
+.quest-progress-fill.success { background-color: #58CC02; }
+.quest-progress-fill.in-progress { background-color: #1CB0F6; }
+.quest-progress-fill.failed { background-color: #FF4B4B; }
+.quest-progress-fill.completed { background-color: #58CC02; position: relative; }
+.quest-progress-fill.completed::after { content: "✔"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: calc(16px * var(--font-scale)); color: white; }
+.quest-progress-text { font-size: calc(14px * var(--font-scale)); color: var(--text-color); font-weight: bold; }
+.quest-progress-fill:hover { filter: brightness(1.2); }

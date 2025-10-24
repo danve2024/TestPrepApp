@@ -1,0 +1,56 @@
+{% extends "menu.html" %}
+{% block content %}
+<div class="lessons-container" style="gap:20px">
+    <br><br>
+    <div class="tab-container" style="display:flex; gap:10px;">
+        <div class="lessons-tab active" data-tab="english" style="cursor:pointer;">English</div>
+        <div class="lessons-tab" data-tab="math" style="cursor:pointer;">Math</div>
+    </div>
+
+    <div class="lessons-content">
+        <!-- English Content -->
+        <div class="lessons-map-container" id="english">
+            <div class="lessons-map">
+                <!-- Active lesson: Intro -->
+                <a href="{{ url_for('lesson') }}"><div class="lesson-node">Intro</div></a>
+                <div class="lesson-line"></div>
+
+                <!-- Locked lessons -->
+                <div class="lesson-node locked">Basics</div>
+                <div class="lesson-line faded"></div>
+                <div class="lesson-node locked">Reading</div>
+                <div class="lesson-line faded"></div>
+
+                <div class="lesson-split faded">
+                    <div class="lesson-node locked">Grammar</div>
+                    <div class="lesson-node locked">Vocabulary</div>
+                    <div class="lesson-node locked">Practice</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Math Content (exact copy of English for now) -->
+        <div class="lessons-placeholder" id="math" style="display: none;">
+            🚧 Math lessons coming soon! Stay tuned!
+        </div>
+
+    </div>
+</div>
+
+<footer>
+    <div class="footer_button">
+        <img src="home-icon.png" alt="Home">
+        Home
+    </div>
+    <div class="footer_button">
+        <img src="lessons-icon.png" alt="Lessons">
+        Lessons
+    </div>
+    <div class="footer_button">
+        <img src="profile-icon.png" alt="Profile">
+        Profile
+    </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/lessons_map.js') }}"></script>
+{% endblock %}

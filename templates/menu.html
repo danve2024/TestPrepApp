@@ -5,26 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Language Learning App</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Cabin">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 </head>
-<body>
+<body class="{{ 'dark-theme' if settings and settings.dark_mode else '' }}" style="--font-scale: {{ ((settings.font_scale_pct or 100) / 100) if settings and settings.font_scale_pct is not none else 1 }};">
+    {% if show_leave %}
+    <header>
+        <a href="{{ leave_url or url_for('lessons') }}" class="header-item" aria-label="Leave the lesson" style="font-size:24px;line-height:1;text-decoration:none">←</a>
+    </header>
+    {% elif not hide_chrome %}
     <header>
         <!-- In the header section, replace static values with dynamic ones -->
-<a href="{{ url_for('score') }}" class="header-item">
-    <div class="coat">
-        <div class="score">{{ session.get('total_score', 1600) }}</div>
-        <span>Progress</span>
-    </div>
-</a>
-<a href="{{ url_for('streak') }}" class="header-item">
-    <div class="coat">
-        <div class="streak">
-            {{ session.get('current_streak', 1) }}
-            <img class="fire" src="{{ url_for('static', filename='logos/streak.png') }}">
-        </div>
-        <div class="streak-sub">Streak</div>
-    </div>
-</a>
+        <a href="{{ url_for('score') }}" class="header-item">
+            <div class="coat">
+                <div class="score">{{ session.get('total_score', 1600) }}</div>
+                <span>Progress</span>
+            </div>
+        </a>
+        <a href="{{ url_for('streak') }}" class="header-item">
+            <div class="coat">
+                <div class="streak">
+                    {{ session.get('current_streak', 1) }}
+                    <img class="fire" src="{{ url_for('static', filename='logos/streak.png') }}">
+                </div>
+                <div class="streak-sub">Streak</div>
+            </div>
+        </a>
         <a href="{{ url_for('profile') }}" class="header-item">
             <div class="coat">
                 <div class="profile-icon">
@@ -34,6 +39,7 @@
             </div>
         </a>
     </header>
+    {% endif %}
 
     <main>
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -49,6 +55,7 @@
         {% block content %}{% endblock %}
     </main>
 
+    {% if not hide_chrome and not show_leave %}
     <footer>
         <a href="{{ url_for('lessons') }}">
             <div class="footer_button">
@@ -74,13 +81,14 @@
                 Daily Quests
             </div>
         </a>
-        <a href="{{ url_for('settings') }}">
+        <a href="{{ url_for('settings_bp.settings') }}">
             <div class="footer_button">
                 <img src="{{ url_for('static', filename='logos/settings.png') }}">
                 Settings
             </div>
         </a>
     </footer>
+    {% endif %}
 
     <!-- Background music -->
     <audio id="background-music" loop>

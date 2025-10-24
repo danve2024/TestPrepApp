@@ -1,0 +1,34 @@
+/* Profile page styles */
+
+/* Profile card layout */
+.profile-card { display: flex; flex-direction: column; align-items: center; padding: 30px; max-width: 500px; margin: auto; }
+
+/* Avatar placeholder */
+.avatar-placeholder { width: 120px; height: 120px; border-radius: 50%; border: 2px dashed #F5F5F5; display: flex; align-items: center; justify-content: center; color: #999; font-weight: bold; font-size: calc(16px * var(--font-scale)); }
+
+/* Profile fields column */
+.profile-fields { width: 100%; display: flex; flex-direction: column; gap: 15px; color: var(--primary-color); }
+
+/* Account type label and toggle */
+.account-type-label { font-weight: bold; margin-top: 15px; font-size: calc(20px * var(--font-scale)); }
+.account-toggle { display: flex; gap: 10px; justify-content: center; }
+.account-info { margin-top: 5px; font-size: calc(14px * var(--font-scale)); color: #fff; }
+
+/* Private/Public toggle buttons */
+.account-toggle .option-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 2px solid #ccc;
+  background-color: var(--card-color);
+  color: var(--text-color);
+  min-width: 120px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.account-toggle .option-button:hover { transform: translateY(-2px); border-color: var(--primary-color); }
+.account-toggle .option-button.selected { border-color: var(--primary-color); }

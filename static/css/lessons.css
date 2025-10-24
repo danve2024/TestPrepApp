@@ -1,0 +1,15 @@
+/* Lessons page styles */
+
+/* Buttons for lesson map */
+.lesson-button { display: inline-block; background-color: var(--primary-color); color: var(--text-color); font-weight: 700; font-size: calc(18px * var(--font-scale)); border: none; border-radius: 16px; padding: 14px 28px; box-shadow: 0 4px 0 #46a302; transition: all 0.15s ease; cursor: pointer; text-align: center; text-decoration: none; user-select: none; min-width: 120px; }
+.lesson-button:hover { background-color: #6FE200; box-shadow: 0 2px 0 var(--primary-color); transform: translateY(2px); }
+.lesson-button:active { background-color: #46A302; box-shadow: 0 2px 0 #2e8000; transform: translateY(4px); }
+.lesson-button:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; transform: none; }
+
+/* Lessons list container with hidden scrollbar */
+.lessons-container { position: absolute; top: 105px; bottom: 100px; left: 0; right: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 24px; padding-top: 40px; padding-bottom: 124px; scroll-behavior: smooth; }
+.lessons-container::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Row layout */
+.row { display: flex; justify-content: center; gap: 24px; width: 100%; }
+.row-container { display: flex; gap: 24px; justify-content: center; flex-wrap: nowrap; }

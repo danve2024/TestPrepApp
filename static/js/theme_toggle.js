@@ -1,27 +1,30 @@
-// Theme switching functionality
-        const themeToggle = document.getElementById('theme-toggle');
-        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+// Theme switching functionality synced with server settings
+(function() {
+  const themeToggle = document.getElementById('theme-toggle');
+  if (!themeToggle) return;
+  // Initialize toggle from server-rendered class
+  themeToggle.checked = document.body.classList.contains('dark-theme');
 
-        // Check for saved theme preference or use OS preference
-        const currentTheme = localStorage.getItem('theme');
-        if (currentTheme === 'dark') {
-            document.body.classList.add('dark-theme');
-            themeToggle.checked = true;
-        } else if (currentTheme === 'light') {
-            document.body.classList.remove('dark-theme');
-            themeToggle.checked = false;
-        } else if (prefersDarkScheme.matches) {
-            document.body.classList.add('dark-theme');
-            themeToggle.checked = true;
-        }
+  // Debounced POST to persist change
+  let timer = null;
+  function persist(value) {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'dark_mode', value })
+      }).catch(() => {});
+    }, 150);
+  }
 
-        // Listen for toggle changes
-        themeToggle.addEventListener('change', function() {
-            if (this.checked) {
-                document.body.classList.add('dark-theme');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                document.body.classList.remove('dark-theme');
-                localStorage.setItem('theme', 'light');
-            }
-        });
+  themeToggle.addEventListener('change', function() {
+    if (this.checked) {
+      document.body.classList.add('dark-theme');
+      persist(true);
+    } else {
+      document.body.classList.remove('dark-theme');
+      persist(false);
+    }
+  });
+})();

@@ -5,13 +5,40 @@
     <h1>Create Account</h1>
     <form method="POST" action="{{ url_for('register') }}" style="width: 100%;">
         <input type="text" id="first_name" name="first_name" placeholder="First Name" required>
+        <input type="text" id="last_name" name="last_name" placeholder="Last Name (Surname)">
         <input type="email" id="email" name="email" placeholder="Email Address (Unique)" required>
         <input type="text" id="username" name="username" placeholder="Choose a Username (Unique)" required>
-        <input type="password" id="password" name="password" placeholder="Create Password" required>
-        <button type="submit" class="start" style="width: 100%; margin: 10px 0; color: white;">
+        <div class="password-field" style="position: relative; color: var(--text-color);">
+            <input type="password" id="password" name="password" placeholder="Create Password" required style="padding-right: 44px;">
+            <span id="togglePassword" aria-label="Show password" role="button" tabindex="0" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; padding:0; line-height:0; display:flex; align-items:center; justify-content:center; color: currentColor;">
+                <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.58 10.58a2 2 0 002.84 2.84"/><path d="M16.24 16.24A10.94 10.94 0 0112 20C6 20 2 12 2 12a21.8 21.8 0 014.62-5.94"/><path d="M14.12 5.12A10.94 10.94 0 0122 12s-1.64 3.28-4.76 5.76"/></svg>
+            </span>
+        </div>
+        <input type="date" id="birth_date" name="birth_date" placeholder="Date of Birth">
+        <button type="submit" class="start" style="width: auto; display: block; margin: 10px auto; color: white; padding: 10px 24px;">
             Register
         </button>
     </form>
-    <p style="margin-top: 20px; font-size: 14px;">Already have an account? <a href="{{ url_for('login') }}" style="color: var(--secondary-color); font-weight: bold;">Log In.</a></p>
+    <p style="margin-top: 20px; font-size: 14px;">Already have an account? <a href="{{ url_for('login') }}" style="color: var(--primary-color); font-weight: bold;">Log In.</a></p>
 </div>
+<script>
+(function(){
+  const pwd = document.getElementById('password');
+  const btn = document.getElementById('togglePassword');
+  const eyeOpen = document.getElementById('eyeOpen');
+  const eyeClosed = document.getElementById('eyeClosed');
+  if (btn && pwd){
+    btn.addEventListener('click', function(){
+      const isHidden = pwd.type === 'password';
+      pwd.type = isHidden ? 'text' : 'password';
+      btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+      if (eyeOpen && eyeClosed){
+        eyeOpen.style.display = isHidden ? 'none' : '';
+        eyeClosed.style.display = isHidden ? '' : 'none';
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

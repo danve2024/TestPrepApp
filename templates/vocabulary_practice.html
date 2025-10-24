@@ -1,7 +1,7 @@
 {% extends "menu.html" %}
 {% block content %}
 
-<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/practice.css') }}">
 
 <!-- Audio elements for sound effects -->
 <audio id="correctSound" preload="auto">
@@ -39,45 +39,68 @@
             {{ question.question }}
         </p>
 
-        {% if question.type == 'pairs_matching' %}
-            <!-- Pairs Matching Question -->
-            <form id="quizForm" class="card-box" method="POST" action="{{ url_for('vocabulary_answer') }}">
-                <div class="pairs-matching-container">
-                    <div class="words-column">
-                        <h3>Words</h3>
+        {% if question and question.type == 'pairs_matching' %}
+            <!-- Duolingo-style Pairs Matching -->
+            <div class="pairs-matching-container">
+                <!-- SVG overlay for connection lines -->
+                <svg class="match-lines-overlay" xmlns="http://www.w3.org/2000/svg"></svg>
+                <div class="matching-section">
+                    <h3>Words</h3>
+                    <div class="items-container" id="wordsContainer">
                         {% for word in words %}
-                            <div class="word-item" data-word="{{ word }}">
+                            <div class="match-item word-item
+                                       {% if answered %}
+                                           {% for pair in question.pairs %}
+                                               {% if pair.word == word %}
+                                                   {% if session.selected_pairs[word] == pair.definition %}correct{% else %}incorrect{% endif %}
+                                               {% endif %}
+                                           {% endfor %}
+                                           matched used
+                                       {% endif %}"
+                                 data-value="{{ word }}"
+                                 {% if not answered %}onclick="matchingGame.selectWord(this)"{% endif %}>
                                 {{ word }}
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <div class="definitions-column">
-                        <h3>Definitions</h3>
-                        {% for definition in definitions %}
-                            <div class="definition-item" data-definition="{{ definition }}">
-                                {{ definition }}
-                                <input type="hidden" name="pair_{{ definition }}" value="">
                             </div>
                         {% endfor %}
                     </div>
                 </div>
 
+                <div class="matching-section">
+                    <h3>Definitions</h3>
+                    <div class="items-container" id="definitionsContainer">
+                        {% for definition in definitions %}
+                            <div class="match-item definition-item
+                                       {% if answered %}
+                                           {% for pair in question.pairs %}
+                                               {% if pair.definition == definition %}
+                                                   {% if session.selected_pairs[pair.word] == definition %}correct{% else %}incorrect{% endif %}
+                                               {% endif %}
+                                           {% endfor %}
+                                           matched used
+                                       {% endif %}"
+                                 data-value="{{ definition }}"
+                                 {% if not answered %}onclick="matchingGame.selectDefinition(this)"{% endif %}>
+                                {{ definition }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% if not answered %}
+            <form id="quizForm" method="POST" action="{{ url_for('vocabulary_answer') }}">
                 <!-- Hidden fields for submitted pairs -->
                 {% for pair in question.pairs %}
                     <input type="hidden" id="pair_{{ pair.word }}" name="pair_{{ pair.word }}" value="">
                 {% endfor %}
-
-                <button type="submit"
-                        id="submitButton"
-                        class="start"
-                        style="margin-top: 20px;"
-                        disabled>
-                    Submit Answer
-                </button>
             </form>
+            
+            <button type="submit" form="quizForm" id="submitButton" class="start" style="margin-top: 20px;" disabled>
+                Check Answers
+            </button>
+            {% endif %}
 
-        {% elif question.type == 'fill_blank' %}
+        {% elif question and question.type == 'fill_blank' %}
             <!-- Duolingo-style Fill in the Blanks -->
             <form id="quizForm" class="card-box" method="POST" action="{{ url_for('vocabulary_answer') }}">
                 <div class="sentence-container">
@@ -116,19 +139,15 @@
                 </div>
 
                 <input type="hidden" id="selected_option" name="selected_option" value="{{ selected_option or '' }}">
-
-                {% if not answered %}
-                <button type="submit"
-                        id="submitButton"
-                        class="start"
-                        style="margin-top: 20px;"
-                        {% if not selected_option %}disabled{% endif %}>
-                    Submit Answer
-                </button>
-                {% endif %}
             </form>
 
-        {% else %}
+            {% if not answered %}
+            <button type="submit" form="quizForm" id="submitButton" class="start" style="margin-top: 20px;" {% if not selected_option %}disabled{% endif %}>
+                Submit Answer
+            </button>
+            {% endif %}
+
+        {% elif question %}
             <!-- Regular Multiple Choice Questions -->
             <form id="quizForm" class="card-box" method="POST" action="{{ url_for('vocabulary_answer') }}">
                 {% for option in options %}
@@ -148,17 +167,13 @@
                 {% endfor %}
 
                 <input type="hidden" id="selected_option" name="selected_option" value="{{ selected_option or '' }}">
-
-                {% if not answered %}
-                <button type="submit"
-                        id="submitButton"
-                        class="start"
-                        style="margin-top: 20px;"
-                        {% if not selected_option %}disabled{% endif %}>
-                    Submit Answer
-                </button>
-                {% endif %}
             </form>
+
+            {% if not answered %}
+            <button type="submit" form="quizForm" id="submitButton" class="start" style="margin-top: 20px;" {% if not selected_option %}disabled{% endif %}>
+                Submit Answer
+            </button>
+            {% endif %}
         {% endif %}
 
         {% if answered %}
@@ -182,7 +197,7 @@
                     {% endif %}
                 </button>
             </form>
-        {% elif question.type != 'pairs_matching' %}
+        {% elif question and question.type != 'pairs_matching' %}
             <p style="margin-top: 15px; color: #666; font-style: italic;">
                 Select an option and click "Submit Answer"
             </p>
@@ -190,6 +205,17 @@
     {% endif %}
 </div>
 
+<script>
+    {% if question and question.type == 'pairs_matching' %}
+        window.questionData = { pairs: {{ question.pairs | tojson }} };
+        window.answered = {{ 'true' if answered else 'false' }};
+        {% if answered %}
+        window.selectedPairs = {{ session.selected_pairs | tojson }};
+        {% endif %}
+    {% else %}
+        window.answered = {{ 'true' if answered else 'false' }};
+    {% endif %}
+</script>
 <script src="{{ url_for('static', filename='js/vocabulary_practice_page.js') }}"></script>
 
 {% endblock %}

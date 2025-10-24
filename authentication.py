@@ -11,7 +11,7 @@ def get_user_id_and_hash(username):
     if rows:
         # Returns (UserID, PasswordHash)
         return rows[0]
-    return None, None
+    return None
 
 
 def get_user_data_by_id(user_id):

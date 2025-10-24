@@ -1,0 +1,54 @@
+/* Streak page styles */
+
+/* Main streak container */
+.streak-container { display: flex; flex-direction: column; align-items: center; padding: 30px 20px; max-width: 600px; margin: auto; }
+
+/* Large streak number and message */
+.streak-number { font-size: calc(64px * var(--font-scale)); font-weight: bold; color: var(--primary-color); margin-bottom: 10px; transition: transform 0.3s; }
+.streak-message { font-size: calc(18px * var(--font-scale)); margin-bottom: 20px; color: var(--text-color); text-align: center; }
+
+/* Streak history bubbles */
+.streak-history { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
+.streak-day { width: 30px; height: 30px; border-radius: 50%; background-color: #ccc; display: flex; align-items: center; justify-content: center; font-size: calc(14px * var(--font-scale)); color: white; cursor: default; transition: transform 0.3s, background-color 0.3s; }
+.streak-day.completed { background-color: var(--primary-color); }
+.streak-day.today { border: 2px solid var(--primary-color); transform: scale(1.2); }
+
+/* Streak goal progress */
+.streak-progress-container { width: 100%; height: 20px; background-color: #ddd; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+.streak-progress-fill { height: 100%; width: 0%; background-color: var(--primary-color); transition: width 0.6s ease-in-out; }
+
+/* Buttons on streak page */
+.streak-buttons { display: flex; gap: 15px; margin-top: 20px; }
+.streak-button { border-radius: 16px; padding: 15px 25px; font-size: calc(16px * var(--font-scale)); cursor: pointer; border: none; background-color: var(--primary-color); color: white; transition: transform 0.3s, background-color 0.3s; }
+.streak-button:hover { transform: translateY(-3px); background-color: #45a700; }
+
+/* Calendar container */
+.calendar { width: 100%; max-width: 640px; background: var(--card-color); border-radius: 16px; padding: 16px; box-shadow: 0 6px 12px var(--shadow-color); position: relative; }
+.cal-header { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; margin-bottom: 12px; }
+.cal-title { font-weight: 700; font-size: calc(18px * var(--font-scale)); color: var(--text-color); text-align: center; }
+.cal-header button { background: transparent; border: none; font-size: calc(14px * var(--font-scale)); cursor: pointer; color: var(--text-color); padding: 4px 8px; border-radius: 8px; }
+.cal-header button:hover { background: rgba(0,0,0,0.06); }
+
+/* Grid (7 columns, Monday-first) */
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.cal-weekday { text-align: center; font-size: calc(12px * var(--font-scale)); font-weight: 700; color: var(--text-color); opacity: 0.7; padding: 6px 0; }
+.cal-day { position: relative; background: #fff; color: #000; border-radius: 12px; min-height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-weight: 700; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.dark-theme .cal-day { background: #1f1f1f; color: #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+.cal-day:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.cal-day.other-month { opacity: 0.35; }
+.cal-day .date-num { position: absolute; top: 8px; right: 10px; font-size: calc(12px * var(--font-scale)); font-weight: 700; opacity: 0.8; }
+
+/* Completed / today states */
+.cal-day.completed { background: linear-gradient(135deg, var(--primary-color), #45a700); color: #fff; }
+.cal-day.completed .date-num { color: #fff; opacity: 0.9; }
+.cal-day.today { outline: 2px solid var(--secondary-color); outline-offset: -2px; }
+.cal-day.missed { filter: grayscale(0.3); opacity: 0.7; }
+/* Streak start marker */
+.cal-day.start { box-shadow: 0 0 0 3px rgba(88,204,2,0.35) inset; }
+/* Goal day outline */
+.cal-day.goal { outline: 3px solid rgba(88,204,2,0.65); outline-offset: -3px; position: relative; }
+.cal-day.goal:hover { box-shadow: 0 6px 14px rgba(88, 204, 2, 0.3); }
+
+/* Tooltip inside calendar */
+.cal-tooltip { position: absolute; background: #000; color: #fff; padding: 6px 10px; border-radius: 8px; font-size: calc(12px * var(--font-scale)); pointer-events: none; transform: translate(-50%, -100%); white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.25); z-index: 10; }
+.dark-theme .cal-tooltip { background: #222; }

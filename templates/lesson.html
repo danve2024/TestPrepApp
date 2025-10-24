@@ -1,7 +1,7 @@
 {% extends "menu.html" %}
 {% block content %}
 
-<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/practice.css') }}">
 
 <!-- Audio elements for sound effects -->
 <audio id="correctSound" preload="auto">
@@ -26,8 +26,8 @@
             <h3>Your Score: {{ score }}/{{ total_questions }} ({{ percentage }}%)</h3>
             <p>{{ performance_msg }}</p>
         </div>
-        <button class="start" onclick="window.location.href='/vocabulary'" style="margin-top: 20px;">
-            Back to Vocabulary
+        <button class="start" onclick="window.location.href='/lessons'" style="margin-top: 20px;">
+            Back to Lessons
         </button>
 
     {% else %}
@@ -35,51 +35,96 @@
             Score: {{ score }}/{{ total_questions }}
         </div>
 
-        <p id="questionText" style="font-size: 1.2em; font-weight: bold; margin-bottom: 20px;">
-            {{ question.question }}
-        </p>
+        <div class="lesson-question-sticky">
+            <p id="questionText" style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">
+                {{ question.question }}
+            </p>
+        </div>
+
+        <div class="lesson-task-text">
+            {{ task_text }}
+        </div>
 
         {% if question.type == 'pairs_matching' %}
-            <!-- Pairs Matching Question -->
-            <form id="quizForm" class="card-box" method="POST" action="{{ url_for('vocabulary_answer') }}">
-                <div class="pairs-matching-container">
-                    <div class="words-column">
-                        <h3>Words</h3>
+            <!-- Duolingo-style Pairs Matching -->
+            <div class="pairs-matching-container">
+                <div class="matching-section">
+                    <h3>Words</h3>
+                    <div class="items-container" id="wordsContainer">
                         {% for word in words %}
-                            <div class="word-item" data-word="{{ word }}">
+                            <div class="match-item word-item
+                                       {% if answered %}
+                                           {% for pair in question.pairs %}
+                                               {% if pair.word == word %}
+                                                   {% if selected_pairs and selected_pairs[pair.word] == pair.definition %}correct{% else %}incorrect{% endif %}
+                                               {% endif %}
+                                           {% endfor %}
+                                           matched used
+                                       {% endif %}"
+                                 data-value="{{ word }}"
+                                 {% if not answered %}onclick="matchingGame.selectWord(this)"{% endif %}>
                                 {{ word }}
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <div class="definitions-column">
-                        <h3>Definitions</h3>
-                        {% for definition in definitions %}
-                            <div class="definition-item" data-definition="{{ definition }}">
-                                {{ definition }}
-                                <input type="hidden" name="pair_{{ definition }}" value="">
                             </div>
                         {% endfor %}
                     </div>
                 </div>
 
+                <div class="matching-section">
+                    <h3>Definitions</h3>
+                    <div class="items-container" id="definitionsContainer">
+                        {% for definition in definitions %}
+                            <div class="match-item definition-item
+                                       {% if answered %}
+                                           {% for pair in question.pairs %}
+                                               {% if pair.definition == definition %}
+                                                   {% if selected_pairs and selected_pairs[pair.word] == definition %}correct{% else %}incorrect{% endif %}
+                                               {% endif %}
+                                           {% endfor %}
+                                           matched used
+                                       {% endif %}"
+                                 data-value="{{ definition }}"
+                                 {% if not answered %}onclick="matchingGame.selectDefinition(this)"{% endif %}>
+                                {{ definition }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            {% if not answered %}
+            <form id="quizForm" method="POST" action="{{ url_for('lesson_answer') }}" data-no-ajax>
                 <!-- Hidden fields for submitted pairs -->
                 {% for pair in question.pairs %}
                     <input type="hidden" id="pair_{{ pair.word }}" name="pair_{{ pair.word }}" value="">
                 {% endfor %}
-
-                <button type="submit"
-                        id="submitButton"
-                        class="start"
-                        style="margin-top: 20px;"
-                        disabled>
-                    Submit Answer
-                </button>
+                <input type="hidden" name="question_id" value="{{ question.question_id }}">
+                <input type="hidden" name="q_index" value="{{ current_index }}">
             </form>
+
+            <button type="submit" form="quizForm" id="submitButton" class="start" style="margin-top: 20px;" disabled>
+                Check Answers
+            </button>
+            {% endif %}
+
+            {% if answered %}
+                <div style="margin-top: 15px; font-weight: bold; color: {% if feedback.is_correct %}green{% else %}red{% endif %};">
+                    {{ feedback.explanation }}
+                </div>
+
+                <form method="POST" action="{{ url_for('lesson_next') }}" style="margin-top: 20px;" data-no-ajax>
+                    <button type="submit" class="start {% if not feedback.is_correct %}continue-incorrect{% endif %}">
+                        {% if current_index < total_questions - 1 %}
+                            Continue
+                        {% else %}
+                            See Results
+                        {% endif %}
+                    </button>
+                </form>
+            {% endif %}
 
         {% elif question.type == 'fill_blank' %}
             <!-- Duolingo-style Fill in the Blanks -->
-            <form id="quizForm" class="card-box" method="POST" action="{{ url_for('vocabulary_answer') }}">
+            <form id="quizForm" class="quiz-form" method="POST" action="{{ url_for('lesson_answer') }}" data-no-ajax>
                 <div class="sentence-container">
                     {% set sentence_parts = question.question.split('________') %}
                     <span class="sentence-part">{{ sentence_parts[0] }}</span>
@@ -116,21 +161,19 @@
                 </div>
 
                 <input type="hidden" id="selected_option" name="selected_option" value="{{ selected_option or '' }}">
-
-                {% if not answered %}
-                <button type="submit"
-                        id="submitButton"
-                        class="start"
-                        style="margin-top: 20px;"
-                        {% if not selected_option %}disabled{% endif %}>
-                    Submit Answer
-                </button>
-                {% endif %}
+                <input type="hidden" name="question_id" value="{{ question.question_id }}">
+                <input type="hidden" name="q_index" value="{{ current_index }}">
             </form>
+
+            {% if not answered %}
+            <button type="submit" form="quizForm" id="submitButton" class="start" style="margin-top: 20px;" {% if not selected_option %}disabled{% endif %}>
+                Submit Answer
+            </button>
+            {% endif %}
 
         {% else %}
             <!-- Regular Multiple Choice Questions -->
-            <form id="quizForm" class="card-box" method="POST" action="{{ url_for('vocabulary_answer') }}">
+            <form id="quizForm" class="card-box" method="POST" action="{{ url_for('lesson_answer') }}" data-no-ajax>
                 {% for option in options %}
                     <button type="button"
                             class="option-button
@@ -141,27 +184,25 @@
                                    {% else %}
                                        {% if option == selected_option %}selected{% endif %}
                                    {% endif %}"
-                            onclick="selectOption('{{ option }}')"
+                            onclick='lessonPick(this, {{ option|tojson }})'
                             {% if answered %}disabled{% endif %}>
                         {{ option }}
                     </button>
                 {% endfor %}
 
                 <input type="hidden" id="selected_option" name="selected_option" value="{{ selected_option or '' }}">
-
-                {% if not answered %}
-                <button type="submit"
-                        id="submitButton"
-                        class="start"
-                        style="margin-top: 20px;"
-                        {% if not selected_option %}disabled{% endif %}>
-                    Submit Answer
-                </button>
-                {% endif %}
+                <input type="hidden" name="question_id" value="{{ question.question_id }}">
+                <input type="hidden" name="q_index" value="{{ current_index }}">
             </form>
+
+            {% if not answered %}
+            <button type="submit" form="quizForm" id="submitButton" class="start" style="margin-top: 20px;" {% if not selected_option %}disabled{% endif %}>
+                Submit Answer
+            </button>
+            {% endif %}
         {% endif %}
 
-        {% if answered %}
+        {% if answered and question.type != 'pairs_matching' %}
             <div id="feedback" style="margin-top: 15px; font-weight: bold;
                  color: {% if feedback.is_correct %}green{% else %}red{% endif %};">
                 {% if feedback.is_correct %}
@@ -172,7 +213,7 @@
                 {{ feedback.explanation }}
             </div>
 
-            <form method="POST" action="{{ url_for('vocabulary_next') }}" style="margin-top: 20px;">
+            <form method="POST" action="{{ url_for('lesson_next') }}" style="margin-top: 20px;" data-no-ajax>
                 <button type="submit"
                         class="start {% if not feedback.is_correct %}continue-incorrect{% endif %}">
                     {% if current_index < total_questions - 1 %}
@@ -182,7 +223,7 @@
                     {% endif %}
                 </button>
             </form>
-        {% elif question.type != 'pairs_matching' %}
+        {% elif question.type != 'pairs_matching' and not answered %}
             <p style="margin-top: 15px; color: #666; font-style: italic;">
                 Select an option and click "Submit Answer"
             </p>
@@ -190,6 +231,365 @@
     {% endif %}
 </div>
 
-<script src="{{ url_for('static', filename='js/vocabulary_practice_page.js') }}"></script>
+<script>
+// Matching pairs functionality
+class MatchingGame {
+    constructor() {
+        this.selectedWord = null;
+        this.selectedDefinition = null;
+        this.matches = new Map();
+        this.correctPairs = new Map(); // Store correct pairs for validation
+        this.mistakesAllowed = 1; // Only one mistake allowed
+        this.mistakesMade = 0;
+        this.attemptsMade = 0;
+        this.maxAttempts = 2;
+        this.gameOver = false;
+
+        this.init();
+    }
+
+    init() {
+        console.log('Matching game initialized');
+        this.loadCorrectPairs();
+        this.updateSubmitButton();
+    }
+
+    loadCorrectPairs() {
+        // Extract correct pairs from the question data
+        const questionData = window.questionData || {};
+        if (questionData.pairs) {
+            questionData.pairs.forEach(pair => {
+                this.correctPairs.set(pair.word, pair.definition);
+            });
+        }
+    }
+
+    selectWord(wordElement) {
+        if (this.gameOver) return;
+        if (wordElement.classList.contains('matched') || wordElement.classList.contains('used')) return;
+
+        this.clearSelections();
+        this.selectedWord = wordElement;
+        wordElement.classList.add('selected');
+
+        if (this.selectedDefinition) {
+            this.tryMatch();
+        }
+    }
+
+    selectDefinition(definitionElement) {
+        if (this.gameOver) return;
+        if (definitionElement.classList.contains('matched') || definitionElement.classList.contains('used')) return;
+
+        this.clearSelections();
+        this.selectedDefinition = definitionElement;
+        definitionElement.classList.add('selected');
+
+        if (this.selectedWord) {
+            this.tryMatch();
+        }
+    }
+
+    clearSelections() {
+        document.querySelectorAll('.match-item.selected').forEach(item => {
+            item.classList.remove('selected');
+        });
+    }
+
+    tryMatch() {
+        if (this.gameOver) return;
+        if (this.selectedWord && this.selectedDefinition) {
+            const word = this.selectedWord.dataset.value;
+            const definition = this.selectedDefinition.dataset.value;
+            const isCorrect = this.correctPairs.get(word) === definition;
+
+            // Store the match
+            this.matches.set(word, definition);
+
+            // Update hidden input
+            const hiddenInput = document.getElementById(`pair_${word}`);
+            if (hiddenInput) {
+                hiddenInput.value = definition;
+            }
+
+            // Apply immediate visual feedback
+            this.selectedWord.classList.remove('selected');
+            this.selectedDefinition.classList.remove('selected');
+            
+            if (isCorrect) {
+                // Correct match - green highlighting
+                this.selectedWord.classList.add('matched', 'correct');
+                this.selectedDefinition.classList.add('matched', 'correct');
+                this.playCorrectSound();
+            } else {
+                // Incorrect match - red highlighting
+                this.selectedWord.classList.add('matched', 'incorrect');
+                this.selectedDefinition.classList.add('matched', 'incorrect');
+                this.mistakesMade++;
+                this.playIncorrectSound();
+                
+                // Auto-reset after first mistake
+                if (this.mistakesMade === 1) {
+                    this.attemptsMade++;
+                    if (this.attemptsMade < this.maxAttempts) {
+                        this.showFirstMistakeMessage();
+                        setTimeout(() => this.resetExercise(), 2000);
+                    } else {
+                        this.showMaxAttemptsReachedMessage();
+                        this.endGame();
+                    }
+                } else if (this.mistakesMade > this.mistakesAllowed) {
+                    this.showTooManyMistakesMessage();
+                    this.endGame();
+                }
+            }
+
+            this.selectedWord = null;
+            this.selectedDefinition = null;
+
+            this.updateSubmitButton();
+        }
+    }
+
+    playCorrectSound() {
+        const sound = document.getElementById('correctSound');
+        if (sound) {
+            sound.currentTime = 0;
+            sound.play().catch(e => console.log('Audio play failed:', e));
+        }
+    }
+
+    playIncorrectSound() {
+        const sound = document.getElementById('incorrectSound');
+        if (sound) {
+            sound.currentTime = 0;
+            sound.play().catch(e => console.log('Audio play failed:', e));
+        }
+    }
+
+    showFirstMistakeMessage() {
+        // Show a message about first mistake and auto-reset
+        const message = document.createElement('div');
+        message.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #ff9800;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            text-align: center;
+        `;
+        message.innerHTML = `
+            <div>One mistake made! Exercise will reset automatically for attempt ${this.attemptsMade + 1} of ${this.maxAttempts}.</div>
+        `;
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            if (document.body.contains(message)) {
+                document.body.removeChild(message);
+            }
+        }, 2000);
+    }
+
+    showMaxAttemptsReachedMessage() {
+        // Show a message that maximum attempts reached
+        const message = document.createElement('div');
+        message.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #f44336;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            text-align: center;
+        `;
+        message.innerHTML = `
+            <div>Maximum attempts reached! You've used all ${this.maxAttempts} attempts.</div>
+        `;
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            if (document.body.contains(message)) {
+                document.body.removeChild(message);
+            }
+        }, 5000);
+    }
+
+    showTooManyMistakesMessage() {
+        // Show a message that too many mistakes were made
+        const message = document.createElement('div');
+        message.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #f44336;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            text-align: center;
+        `;
+        message.innerHTML = `
+            <div>Too many mistakes! Only one mistake is allowed per attempt.</div>
+        `;
+        document.body.appendChild(message);
+        
+        setTimeout(() => {
+            if (document.body.contains(message)) {
+                document.body.removeChild(message);
+            }
+        }, 5000);
+    }
+
+    resetExercise() {
+        if (this.gameOver) return;
+        // Reset all matches and mistakes
+        this.matches.clear();
+        this.mistakesMade = 0;
+        
+        // Remove all visual states
+        document.querySelectorAll('.match-item').forEach(item => {
+            item.classList.remove('matched', 'correct', 'incorrect', 'used');
+        });
+        
+        // Clear hidden inputs
+        document.querySelectorAll('input[id^="pair_"]').forEach(input => {
+            input.value = '';
+        });
+        
+        // Reset submit button
+        const submitButton = document.getElementById('submitButton');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Check Answers';
+            submitButton.style.backgroundColor = '#58CC02';
+        }
+        
+        // Remove the message
+        const message = document.querySelector('div[style*="position: fixed"]');
+        if (message) {
+            document.body.removeChild(message);
+        }
+        
+        console.log('Exercise reset');
+    }
+
+    endGame() {
+        this.gameOver = true;
+        // Disable all interactions
+        document.querySelectorAll('.match-item').forEach(item => {
+            item.style.pointerEvents = 'none';
+            item.classList.add('used');
+        });
+        const submitButton = document.getElementById('submitButton');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+    }
+
+    updateSubmitButton() {
+        const submitButton = document.getElementById('submitButton');
+        const totalWords = document.querySelectorAll('.word-item').length;
+
+        if (submitButton) {
+            const allMatched = this.matches.size === totalWords;
+            const withinMistakeLimit = this.mistakesMade <= this.mistakesAllowed;
+            
+            submitButton.disabled = !allMatched || !withinMistakeLimit;
+            
+            if (allMatched && !withinMistakeLimit) {
+                submitButton.textContent = 'Too Many Mistakes';
+                submitButton.style.backgroundColor = '#f44336';
+            } else if (allMatched) {
+                submitButton.textContent = 'Check Answers';
+                submitButton.style.backgroundColor = '#58CC02';
+            }
+            
+            console.log('Submit button updated:', this.matches.size, '/', totalWords, 'mistakes:', this.mistakesMade, 'disabled:', submitButton.disabled);
+        }
+    }
+}
+
+// Multiple choice selection (namespaced to avoid conflicts with vocabulary page)
+function lessonSelectOption(e, option) {
+    document.getElementById('selected_option').value = option;
+
+    // Remove selected class from all buttons
+    document.querySelectorAll('.option-button').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+
+    // Add selected class to clicked button
+    if (e && e.currentTarget) {
+        e.currentTarget.classList.add('selected');
+    }
+
+    // Enable submit button
+    document.getElementById('submitButton').disabled = false;
+}
+
+// Reliable MCQ picker used by onclick to avoid escaping issues
+function lessonPick(btn, opt) {
+    try {
+        var form = btn && btn.closest ? btn.closest('form') : null;
+        if (form) {
+            var buttons = form.querySelectorAll('.option-button');
+            buttons.forEach(function(b){ b.classList.remove('selected'); });
+        }
+        var hidden = form ? form.querySelector('#selected_option') : document.getElementById('selected_option');
+        if (hidden) hidden.value = opt;
+        if (btn && btn.classList) btn.classList.add('selected');
+        var sb = document.getElementById('submitButton');
+        if (sb) sb.disabled = false;
+    } catch (e) { console && console.warn && console.warn('lessonPick error', e); }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    {% if question and question.type == 'pairs_matching' and not answered %}
+        // Pass question data to JavaScript
+        window.questionData = {
+            pairs: {{ question.pairs | tojson }}
+        };
+        window.matchingGame = new MatchingGame();
+    {% endif %}
+
+    // Add sound effects for feedback
+    const feedback = document.getElementById('feedback');
+    if (feedback) {
+        if (feedback.style.color === 'green') {
+            playSound('correctSound');
+        } else if (feedback.style.color === 'red') {
+            playSound('incorrectSound');
+        }
+    }
+
+    // Play finish sound if quiz is complete
+    if (document.querySelector('.results-summary')) {
+        playSound('finishSound');
+    }
+});
+
+function playSound(soundId) {
+    const sound = document.getElementById(soundId);
+    if (sound) {
+        sound.currentTime = 0;
+        sound.play().catch(e => console.log('Audio play failed:', e));
+    }
+}
+</script>
 
 {% endblock %}

@@ -1,0 +1,137 @@
+{% extends "menu.html" %}
+
+{% block content %}
+<div class="content-card" style="max-width:520px; margin:0 auto; text-align:center; display:flex; flex-direction:column; gap:16px; align-items:center; box-sizing:border-box; padding:20px; overflow:hidden;">
+  <h1 style="margin:0;">Verify your email</h1>
+  {% if just_registered %}
+    <p style="margin:0; opacity:0.95;">Registration successful! Please verify your email.</p>
+  {% else %}
+    <p style="margin:0; opacity:0.95;">Please verify your email to continue.</p>
+  {% endif %}
+  <p style="margin:0; opacity:0.9;">We sent a verification email to <strong>{{ email }}</strong></p>
+  <p style="margin:0; opacity:0.9;">Click the link in the email, or enter the 6-digit code below.</p>
+
+  
+
+  <form id="codeForm" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center;">
+    <input id="codeInput" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Enter 6-digit code" style="padding:10px 12px; font-size:16px; width: 220px; box-sizing:border-box;" />
+    <button type="submit" id="submitCodeBtn" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 14px; border-radius:8px; background:#58CC02; color:#fff; border:none; cursor:pointer; font-weight:600;">Verify</button>
+  </form>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+    <button id="resendBtn" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 14px; border-radius:8px; background:#1CB0F6; color:#fff; border:none; cursor:pointer; font-weight:600;">Resend email</button>
+    <button id="refreshBtn" style="display:inline-flex; align-items:center; justify-content:center; padding:8px 14px; border-radius:8px; background:#e9ecef; color:#222; border:none; cursor:pointer; font-weight:600;">I clicked the link</button>
+  </div>
+
+  <div id="statusMsg" style="font-size:14px; opacity:0.8;"></div>
+
+  <div style="margin-top:auto; margin-bottom:16px; font-size:14px; width:100%; display:flex; justify-content:center;">
+    <a href="{{ url_for('logout') }}" style="color: var(--primary-color); font-weight:600; text-decoration:none;">Back to log in</a>
+  </div>
+</div>
+
+<script>
+(function(){
+  const statusMsg = document.getElementById('statusMsg');
+  const codeForm = document.getElementById('codeForm');
+  const codeInput = document.getElementById('codeInput');
+  const resendBtn = document.getElementById('resendBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const submitBtn = document.getElementById('submitCodeBtn');
+
+  async function checkStatus(){
+    try{
+      const res = await fetch('/verify/status', { headers: { 'Accept': 'application/json' }});
+      const json = await res.json();
+      if (json && json.ok && json.verified){
+        statusMsg.textContent = 'Verified! Redirecting...';
+        window.location.href = '/welcome';
+        return true;
+      }
+      return false;
+    }catch(e){ return false; }
+  }
+
+  async function submitCode(ev){
+    ev.preventDefault();
+    const code = (codeInput.value || '').trim();
+    if (code.length !== 6) { statusMsg.textContent = 'Enter the 6-digit code.'; return; }
+    try{
+      submitBtn.disabled = true; submitBtn.textContent = 'Verifying...';
+      const res = await fetch('/verify/code', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code })
+      });
+      const json = await res.json();
+      if (json && json.ok){
+        statusMsg.textContent = 'Verified! Redirecting...';
+        window.location.href = '/welcome';
+      } else {
+        statusMsg.textContent = json.error || 'Invalid or expired code.';
+      }
+    }catch(e){ statusMsg.textContent = 'Network error. Try again.'; }
+    finally{ submitBtn.disabled = false; submitBtn.textContent = 'Verify'; }
+  }
+
+  function startResendCountdown(seconds){
+    let remaining = seconds;
+    resendBtn.disabled = true;
+    const base = 'Resend email';
+    const id = setInterval(()=>{
+      remaining--;
+      if (remaining <= 0){
+        clearInterval(id);
+        resendBtn.disabled = false;
+        resendBtn.textContent = base;
+      } else {
+        resendBtn.textContent = `${base} (${remaining}s)`;
+      }
+    }, 1000);
+  }
+
+  async function resend(){
+    resendBtn.disabled = true; statusMsg.textContent = 'Sending...';
+    try{
+      const res = await fetch('/verify/resend', { method: 'POST' });
+      const json = await res.json();
+      if (json && json.ok){
+        statusMsg.textContent = 'Email resent. Please check your inbox.';
+        // 2 minutes cooldown
+        startResendCountdown(120);
+      } else {
+        statusMsg.textContent = json.error || 'Could not resend yet. Please wait and try again.';
+        // if backend rejected due to cooldown, still start a short countdown to avoid hammering
+        startResendCountdown(60);
+      }
+    }catch(e){ statusMsg.textContent = 'Network error. Try again.'; }
+    finally{ /* countdown handles re-enable */ }
+  }
+
+  if (codeForm) codeForm.addEventListener('submit', submitCode);
+  if (resendBtn) resendBtn.addEventListener('click', resend);
+  if (refreshBtn) refreshBtn.addEventListener('click', function(){
+    statusMsg.textContent = 'Checking...';
+    checkStatus();
+  });
+
+  // Poll every 4s to auto-unlock
+  setInterval(checkStatus, 4000);
+
+  // Enforce digit-only input for code
+  if (codeInput){
+    codeInput.addEventListener('input', function(){
+      this.value = this.value.replace(/\D+/g, '').slice(0, 6);
+    });
+    codeInput.addEventListener('keypress', function(e){
+      const c = e.key;
+      if (!/[0-9]/.test(c)) e.preventDefault();
+    });
+    codeInput.addEventListener('paste', function(e){
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      const digits = (text || '').replace(/\D+/g, '').slice(0,6);
+      document.execCommand('insertText', false, digits);
+    });
+  }
+})();
+</script>
+{% endblock %}

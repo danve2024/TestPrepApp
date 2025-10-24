@@ -5,11 +5,57 @@
     <h1>Log In</h1>
     <form method="POST" action="{{ url_for('login') }}">
     <input type="text" id="username" name="username" placeholder="Username">
-    <input type="password" id="password" name="password" placeholder="Password">
-        <button type="submit" class="start">
+    <div class="password-field" style="position: relative; color: var(--text-color);">
+        <input type="password" id="password" name="password" placeholder="Password" style="padding-right: 44px;">
+        <span id="togglePassword" aria-label="Show password" role="button" tabindex="0" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; padding:0; line-height:0; display:flex; align-items:center; justify-content:center; color: currentColor;">
+            <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.58 10.58a2 2 0 002.84 2.84"/><path d="M16.24 16.24A10.94 10.94 0 0112 20C6 20 2 12 2 12a21.8 21.8 0 014.62-5.94"/><path d="M14.12 5.12A10.94 10.94 0 0122 12s-1.64 3.28-4.76 5.76"/></svg>
+        </span>
+    </div>
+        <button type="submit" class="start" id="loginBtn" disabled style="background:#c9c9c9; cursor:not-allowed;">
         Log In
     </button>
     </form>
     <p style="margin-top: 20px; font-size: 14px;">Don't have an account? <a href="{{ url_for('register') }}" style="color: var(--primary-color); font-weight: bold;">Register here.</a></p>
 </div>
+<script>
+  (function(){
+    const pwd = document.getElementById('password');
+    const btn = document.getElementById('togglePassword');
+    const eyeOpen = document.getElementById('eyeOpen');
+    const eyeClosed = document.getElementById('eyeClosed');
+    const username = document.getElementById('username');
+    const loginBtn = document.getElementById('loginBtn');
+    if (btn && pwd) {
+      btn.addEventListener('click', function(){
+        const isHidden = pwd.type === 'password';
+        pwd.type = isHidden ? 'text' : 'password';
+        btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+        if (eyeOpen && eyeClosed) {
+          eyeOpen.style.display = isHidden ? 'none' : '';
+          eyeClosed.style.display = isHidden ? '' : 'none';
+        }
+      });
+    }
+
+    function updateLoginBtn(){
+      const hasUser = username && username.value.trim().length > 0;
+      const hasPwd = pwd && pwd.value.trim().length > 0;
+      const ok = hasUser && hasPwd; // green only when both fields have text
+      if (!loginBtn) return;
+      loginBtn.disabled = !ok;
+      if (ok) {
+        loginBtn.style.background = '#58CC02';
+        loginBtn.style.cursor = 'pointer';
+      } else {
+        loginBtn.style.background = '#c9c9c9';
+        loginBtn.style.cursor = 'not-allowed';
+      }
+    }
+    if (username) username.addEventListener('input', updateLoginBtn);
+    if (pwd) pwd.addEventListener('input', updateLoginBtn);
+    updateLoginBtn();
+  })();
+</script>
+
 {% endblock %}
