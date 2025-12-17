@@ -12,7 +12,7 @@
             <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.58 10.58a2 2 0 002.84 2.84"/><path d="M16.24 16.24A10.94 10.94 0 0112 20C6 20 2 12 2 12a21.8 21.8 0 014.62-5.94"/><path d="M14.12 5.12A10.94 10.94 0 0122 12s-1.64 3.28-4.76 5.76"/></svg>
         </span>
     </div>
-        <button type="submit" class="start" id="loginBtn" disabled style="background:#c9c9c9; cursor:not-allowed;">
+        <button type="submit" class="start" id="loginBtn" disabled style="background: var(--border-color); cursor:not-allowed;">
         Log In
     </button>
     </form>
@@ -45,10 +45,10 @@
       if (!loginBtn) return;
       loginBtn.disabled = !ok;
       if (ok) {
-        loginBtn.style.background = '#58CC02';
+        loginBtn.style.background = 'var(--primary-color)';
         loginBtn.style.cursor = 'pointer';
       } else {
-        loginBtn.style.background = '#c9c9c9';
+        loginBtn.style.background = 'var(--border-color)';
         loginBtn.style.cursor = 'not-allowed';
       }
     }

@@ -18,7 +18,7 @@
 </audio>
 
 <div class="wide-content-card" id="lessonCard" style="text-align: center;">
-    <h1>Lesson 1</h1>
+    <h1>{{ lesson_title or "Lesson" }}</h1>
 
     {% if quiz_complete %}
         <div class="results-summary">
@@ -31,21 +31,96 @@
         </button>
 
     {% else %}
-        <div class="score-display" style="margin-bottom: 20px; font-weight: bold;">
-            Score: {{ score }}/{{ total_questions }}
+        <!-- Score and Progress -->
+        <div class="score-container" style="background: var(--card-color); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid var(--shadow-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <div style="font-size: 1.1rem; font-weight: 600; color: var(--primary-color);">
+                    EBRW Score: {{ score_data.score }}/{{ score_data.max_score }}
+                </div>
+                <div style="font-size: 0.9rem; color: var(--text-color); opacity: 0.8;">
+                    Questions: {{ score_data.questions_remaining }}/{{ score_data.total_questions }} remaining
+                </div>
+            </div>
+            <div class="progress-bar" style="height: 8px; background: var(--background-color); border-radius: 4px; overflow: hidden;">
+                <div class="progress-fill" data-progress="{{ (score_data.score / score_data.max_score) * 100 }}" style="height: 100%; background: var(--primary-color);"></div>
+            </div>
+            <script>
+                document.querySelector('.progress-fill').style.width = '{{ (score_data.score / score_data.max_score) * 100 }}%';
+            </script>
+        </div>
+        
+        <!-- Lesson Score -->
+        <div class="lesson-score" style="margin-bottom: 1.5rem; text-align: right; font-size: 0.9rem; color: var(--text-color); opacity: 0.8;">
+            Lesson Score: {{ score }}/{{ total_questions }}
         </div>
 
+        
+        
         <div class="lesson-question-sticky">
-            <p id="questionText" style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">
-                {{ question.question }}
-            </p>
+            <div class="question-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--card-color);">
+                <h2 style="margin: 0; color: var(--primary-color); font-size: 1.5rem; font-weight: 600;">
+                    Question {{ current_index + 1 }}
+                </h2>
+                <div style="color: var(--text-color); opacity: 0.8; font-size: 0.9rem;">
+                    {{ current_index + 1 }}/{{ total_questions }}
+                </div>
+            </div>
+            
+            <!-- Main Question -->
+            <div class="question-main" style="background: var(--card-color); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid var(--shadow-color);">
+                <div style="color: var(--text-color); font-size: 1.1rem; line-height: 1.7; margin-bottom: 1.25rem;">
+                    {{ question.question if 'question' in question else (question.text if 'text' in question else 'No question text available') }}
+                </div>
+                
+                <!-- Additional text content -->
+                {% if question.text and question.text != question.question %}
+                <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--shadow-color);">
+                    <div style="max-height: 250px; overflow-y: auto; color: var(--text-color); opacity: 0.9; line-height: 1.7; padding-right: 1rem; font-size: 1rem;">
+                        {{ question.text }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <script>
+                // Ensure we have a valid question index on page load
+                document.addEventListener('DOMContentLoaded', function() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const currentQuestion = {{ current_index + 1 }};
+                    
+                    // Update URL to reflect current question if needed
+                    if (urlParams.get('question') !== currentQuestion.toString()) {
+                        urlParams.set('question', currentQuestion);
+                        window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
+                    }
+                    
+                    // Reset to first question if this is a fresh load
+                    if (!urlParams.has('question')) {
+                        fetch('/lesson_reset', { method: 'POST' });
+                    }
+                });
+                
+                // Handle navigation between questions
+                function navigateQuestion(direction) {
+                    const currentQuestion = {{ current_index + 1 }};
+                    const totalQuestions = {{ total_questions }};
+                    let newQuestion = direction === 'next' ? currentQuestion + 1 : currentQuestion - 1;
+                    
+                    // Ensure we stay within bounds
+                    newQuestion = Math.max(1, Math.min(newQuestion, totalQuestions));
+                    
+                    if (newQuestion !== currentQuestion) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('question', newQuestion);
+                        window.location.href = url.toString();
+                    }
+                }
+            </script>
         </div>
 
-        <div class="lesson-task-text">
-            {{ task_text }}
-        </div>
-
+        <!-- Question content will be above the question text -->
         {% if question.type == 'pairs_matching' %}
+            <h3>Match the words with their definitions:</h3>
             <!-- Duolingo-style Pairs Matching -->
             <div class="pairs-matching-container">
                 <div class="matching-section">
@@ -92,7 +167,7 @@
             </div>
 
             {% if not answered %}
-            <form id="quizForm" method="POST" action="{{ url_for('lesson_answer') }}" data-no-ajax>
+            <form id="quizForm" method="POST" action="{{ url_for('lesson_answer') }}">
                 <!-- Hidden fields for submitted pairs -->
                 {% for pair in question.pairs %}
                     <input type="hidden" id="pair_{{ pair.word }}" name="pair_{{ pair.word }}" value="">
@@ -111,7 +186,11 @@
                     {{ feedback.explanation }}
                 </div>
 
-                <form method="POST" action="{{ url_for('lesson_next') }}" style="margin-top: 20px;" data-no-ajax>
+                <form method="POST" action="{{ url_for('lesson_next') }}" style="margin-top: 20px;">
+                    <input type="hidden" name="q_index" value="{{ current_index }}">
+                    {% if question and question.question_id %}
+                    <input type="hidden" name="question_id" value="{{ question.question_id }}">
+                    {% endif %}
                     <button type="submit" class="start {% if not feedback.is_correct %}continue-incorrect{% endif %}">
                         {% if current_index < total_questions - 1 %}
                             Continue
@@ -125,6 +204,10 @@
         {% elif question.type == 'fill_blank' %}
             <!-- Duolingo-style Fill in the Blanks -->
             <form id="quizForm" class="quiz-form" method="POST" action="{{ url_for('lesson_answer') }}" data-no-ajax>
+                <input type="hidden" name="q_index" value="{{ current_index }}">
+                {% if question and question.question_id %}
+                <input type="hidden" name="question_id" value="{{ question.question_id }}">
+                {% endif %}
                 <div class="sentence-container">
                     {% set sentence_parts = question.question.split('________') %}
                     <span class="sentence-part">{{ sentence_parts[0] }}</span>
@@ -175,14 +258,17 @@
             <!-- Regular Multiple Choice Questions -->
             <form id="quizForm" class="card-box" method="POST" action="{{ url_for('lesson_answer') }}" data-no-ajax>
                 {% for option in options %}
+                    {% set option_clean = option|string|trim %}
+                    {% set selected_clean = (selected_option|string|trim) if selected_option else '' %}
+                    {% set correct_clean = (correct_answer|string|trim) if correct_answer else '' %}
                     <button type="button"
                             class="option-button
                                    {% if answered %}
-                                       {% if option == selected_option and not feedback.is_correct %}selected-incorrect
-                                       {% elif option == selected_option and feedback.is_correct %}selected-correct
-                                       {% elif option == correct_answer %}correct-answer{% endif %}
+                                       {% if option_clean == selected_clean and not feedback.is_correct %}selected-incorrect
+                                       {% elif option_clean == selected_clean and feedback.is_correct %}selected-correct
+                                       {% elif option_clean == correct_clean %}correct-answer{% endif %}
                                    {% else %}
-                                       {% if option == selected_option %}selected{% endif %}
+                                       {% if option_clean == selected_clean %}selected{% endif %}
                                    {% endif %}"
                             onclick='lessonPick(this, {{ option|tojson }})'
                             {% if answered %}disabled{% endif %}>
@@ -213,7 +299,7 @@
                 {{ feedback.explanation }}
             </div>
 
-            <form method="POST" action="{{ url_for('lesson_next') }}" style="margin-top: 20px;" data-no-ajax>
+            <form method="POST" action="{{ url_for('lesson_next') }}" style="margin-top: 20px;">
                 <button type="submit"
                         class="start {% if not feedback.is_correct %}continue-incorrect{% endif %}">
                     {% if current_index < total_questions - 1 %}
@@ -228,9 +314,6 @@
                 Select an option and click "Submit Answer"
             </p>
         {% endif %}
-    {% endif %}
-</div>
-
 <script>
 // Matching pairs functionality
 class MatchingGame {
@@ -249,7 +332,6 @@ class MatchingGame {
     }
 
     init() {
-        console.log('Matching game initialized');
         this.loadCorrectPairs();
         this.updateSubmitButton();
     }
@@ -355,7 +437,7 @@ class MatchingGame {
         const sound = document.getElementById('correctSound');
         if (sound) {
             sound.currentTime = 0;
-            sound.play().catch(e => console.log('Audio play failed:', e));
+            sound.play().catch(() => {});
         }
     }
 
@@ -363,7 +445,7 @@ class MatchingGame {
         const sound = document.getElementById('incorrectSound');
         if (sound) {
             sound.currentTime = 0;
-            sound.play().catch(e => console.log('Audio play failed:', e));
+            sound.play().catch(() => {});
         }
     }
 
@@ -484,7 +566,7 @@ class MatchingGame {
             document.body.removeChild(message);
         }
         
-        console.log('Exercise reset');
+        
     }
 
     endGame() {
@@ -518,7 +600,7 @@ class MatchingGame {
                 submitButton.style.backgroundColor = '#58CC02';
             }
             
-            console.log('Submit button updated:', this.matches.size, '/', totalWords, 'mistakes:', this.mistakesMade, 'disabled:', submitButton.disabled);
+            
         }
     }
 }
@@ -554,7 +636,7 @@ function lessonPick(btn, opt) {
         if (btn && btn.classList) btn.classList.add('selected');
         var sb = document.getElementById('submitButton');
         if (sb) sb.disabled = false;
-    } catch (e) { console && console.warn && console.warn('lessonPick error', e); }
+    } catch (e) { }
 }
 
 // Initialize when page loads
@@ -587,9 +669,56 @@ function playSound(soundId) {
     const sound = document.getElementById(soundId);
     if (sound) {
         sound.currentTime = 0;
-        sound.play().catch(e => console.log('Audio play failed:', e));
+        sound.play().catch(() => {});
+    }
+}
+
+
+function updateQuestionUI(data) {
+    // Update score display
+    const scoreElement = document.querySelector('.score-value');
+    if (scoreElement) {
+        scoreElement.textContent = data.current_score;
+    }
+    
+    // Update EBRW score
+    const ebrwScoreElement = document.querySelector('.ebrw-score');
+    if (ebrwScoreElement) {
+        ebrwScoreElement.textContent = data.ebrw_score;
+    }
+    
+    // Show feedback
+    const feedbackElement = document.getElementById('feedback');
+    if (feedbackElement && data.feedback) {
+        feedbackElement.textContent = data.feedback.explanation;
+        feedbackElement.style.color = data.is_correct ? 'green' : 'red';
+        feedbackElement.style.display = 'block';
+    }
+    
+    // Enable the continue button
+    const continueButton = document.querySelector('button[type="submit"]');
+    if (continueButton) {
+        continueButton.disabled = false;
+    }
+}
+
+function updateFormForNextQuestion(form, nextIndex) {
+    // Update the question index in the form
+    const indexInput = form.querySelector('input[name="q_index"]');
+    if (indexInput) {
+        indexInput.value = nextIndex;
+    }
+    
+    // Reset the form for the next question
+    form.reset();
+    
+    // Hide feedback
+    const feedbackElement = document.getElementById('feedback');
+    if (feedbackElement) {
+        feedbackElement.style.display = 'none';
     }
 }
 </script>
 
+{% endif %}
 {% endblock %}

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Language Learning App</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Cabin">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 </head>
 <body class="{{ 'dark-theme' if settings and settings.dark_mode else '' }}" style="--font-scale: {{ ((settings.font_scale_pct or 100) / 100) if settings and settings.font_scale_pct is not none else 1 }};">
@@ -41,7 +42,7 @@
     </header>
     {% endif %}
 
-    <main>
+    <main id="content-root">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}

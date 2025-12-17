@@ -102,6 +102,17 @@
     });
   }
 
+  // NEW: Add button click handling to prevent interference
+  function attachButtonInterception() {
+    document.addEventListener('click', function(e) {
+      const button = e.target.closest('button');
+      if (!button) return;
+      if (e.defaultPrevented) return;
+      if (button.hasAttribute('data-no-ajax')) return;
+      // Let button clicks work normally - don't interfere
+    });
+  }
+
   function attachPopState() {
     window.addEventListener('popstate', function(e) {
       const url = (e.state && e.state.url) ? e.state.url : window.location.href;
@@ -112,6 +123,7 @@
   document.addEventListener('DOMContentLoaded', function() {
     attachLinkInterception();
     attachFormInterception();
+    attachButtonInterception();
     attachPopState();
   });
 })();

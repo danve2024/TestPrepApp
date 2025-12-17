@@ -93,9 +93,9 @@
 </div>
 </form>
 <div class="settings-actions">
-  <button id="saveSettingsBtn" type="submit" form="settings-form" class="btn-secondary" disabled>Save Settings</button>
   <a href="{{ url_for('logout') }}"><button class="btn-logout">Log Out</button></a>
   </div>
+  <div id="saveNotification" class="save-notification"></div>
 <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 <script>
 // Persist week start day to localStorage so calendar can pick it up immediately

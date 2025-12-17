@@ -9,35 +9,50 @@
 </div>
 
 <div class="card-box">
-<!-- Quest 1 -->
-<div class="quest-card" role="group" aria-label="Quest: Complete 3 Lessons. Progress 1 of 3">
-    <h2>Complete 3 Lessons</h2>
+{% for quest in quests %}
+<!-- Quest {{ loop.index }} -->
+<div class="quest-card" role="group" aria-label="Quest: {{ quest.name }}. Progress {{ quest.current }} of {{ quest.target }}">
+    <h2>{{ quest.name }}</h2>
     <div class="quest-progress">
-        <div class="quest-progress-fill success" data-target="100"></div>
+        {% set progress_percent = (quest.current / quest.target * 100) if quest.target > 0 else 0 %}
+        {% if quest.completed %}
+            <div class="quest-progress-fill completed" data-target="{{ progress_percent }}"></div>
+        {% else %}
+            <div class="quest-progress-fill in-progress" data-target="{{ progress_percent }}"></div>
+        {% endif %}
     </div>
-    <div class="quest-progress-text">3 / 3</div>
+    <div class="quest-progress-text">{{ quest.current }} / {{ quest.target }}</div>
+</div>
+{% endfor %}
 </div>
 
-<!-- Quest 2 -->
-<div class="quest-card" role="group" aria-label="Quest: Practice for 15 minutes. Progress 10 of 15 minutes">
-    <h2>Practice for 15 minutes</h2>
-    <div class="quest-progress">
-        <div class="quest-progress-fill in-progress" data-target="66"></div>
-    </div>
-    <div class="quest-progress-text">10 / 15 min</div>
+<!-- Reset Quests Button -->
+<div style="text-align: center; margin-top: 30px;">
+    <button class="reset-quests-btn" onclick="resetDailyQuests()" style="background: #ff4444; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">
+        Reset Daily Quests
+    </button>
 </div>
-
-<!-- Quest 3 -->
-<div class="quest-card" role="group" aria-label="Quest: Learn 10 new words. Progress 4 of 10">
-    <h2>Learn 10 new words</h2>
-    <div class="quest-progress">
-        <div class="quest-progress-fill failed" data-target="40"></div>
-    </div>
-    <div class="quest-progress-text">4 / 10</div>
-</div>
-
 
 <script src="{{ url_for('static', filename='js/theme_toggle.js') }}"></script>
 <script src="{{ url_for('static', filename='js/quests.js') }}"></script>
+<script>
+function resetDailyQuests() {
+    if (confirm('Are you sure you want to reset all daily quests? This will clear all progress for today.')) {
+        fetch('/reset_quests', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Failed to reset quests: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while resetting quests');
+            });
+    }
+}
+</script>
 </div>
 {% endblock %}

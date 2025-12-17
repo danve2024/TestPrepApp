@@ -4,10 +4,10 @@
 
 <div class="streak-container" style="display:flex; flex-direction:column; align-items:center; gap:20px;">
 
-    <div class="tab-container" style="display:flex; gap:10px;">
+    <!--div class="tab-container" style="display:flex; gap:10px;">
         <div class="tab active" data-tab="yourStreak" style="cursor:pointer;">Your Streak</div>
         <div class="tab" data-tab="friends" style="cursor:pointer;">Friends</div>
-    </div>
+    </div>-->
 
     <div id="yourStreak" class="tab-content active" style="display:flex; flex-direction:column; align-items:center; gap:20px;">
 
@@ -27,13 +27,7 @@
                 <button id="calNext" aria-label="Next month">→</button>
             </div>
             <div class="cal-grid" id="calGrid">
-                <div class="cal-weekday">Mon</div>
-                <div class="cal-weekday">Tue</div>
-                <div class="cal-weekday">Wed</div>
-                <div class="cal-weekday">Thu</div>
-                <div class="cal-weekday">Fri</div>
-                <div class="cal-weekday">Sat</div>
-                <div class="cal-weekday">Sun</div>
+                <!-- Weekday headers will be populated by JavaScript -->
                 <!-- Days will be injected by JS -->
             </div>
             <div id="calTooltip" class="cal-tooltip" hidden></div>

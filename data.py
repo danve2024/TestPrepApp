@@ -37,9 +37,9 @@ class BaseDB:
                 cursor = conn.cursor()
                 cursor.executescript(config['schema'])
                 conn.commit()
-                print(f"✅ Initialized database: {db_key} ({config['file']})")
+                print(f"[OK] Initialized database: {db_key} ({config['file']})")
             except sqlite3.Error as e:
-                print(f"❌ Error initializing database {db_key}: {e}")
+                print(f"[ERROR] Error initializing database {db_key}: {e}")
             finally:
                 if conn:
                     conn.close()
@@ -55,27 +55,54 @@ class BaseDB:
         :returns: (columns, results) tuple. Results is None for non-SELECT queries.
         """
         if db_key not in self.db_configs:
-            return [f"❌ Error: Database key '{db_key}' not found in configuration."], None
+            print(f"[ERROR] Database key '{db_key}' not found in configuration.")
+            return None, None
 
-        conn = self._get_connection(db_key)
-        cursor = conn.cursor()
-
+        conn = None
         try:
+            conn = self._get_connection(db_key)
+            cursor = conn.cursor()
+            
+            # Execute the query
             cursor.execute(sql_query, params)
-            if sql_query.strip().upper().startswith('SELECT'):
-                # Return column names and fetched data
-                columns = [desc[0] for desc in cursor.description]
+            
+            # Check if this is a SELECT query by checking if it starts with SELECT or PRAGMA
+            is_select = sql_query.strip().upper().startswith(('SELECT', 'PRAGMA'))
+            
+            if is_select:
+                # For SELECT/PRAGMA queries, fetch the results
+                if cursor.description:
+                    columns = [desc[0] for desc in cursor.description]
+                else:
+                    # For PRAGMA queries that don't return column descriptions
+                    columns = ['result']
+                
                 results = cursor.fetchall()
                 return columns, results
             else:
+                # For non-SELECT queries, commit and return rowcount
                 conn.commit()
-                # Non-SELECT queries return a success message and None for results
-                return [f"✅ SQL executed successfully on {db_key}. Rows affected: {cursor.rowcount}"], None
+                return [f"Rows affected: {cursor.rowcount}"], None
+                
         except sqlite3.Error as e:
-            conn.rollback()
-            return [f"❌ SQL Error on {db_key}: {e}"], None
+            print(f"[SQL ERROR] {str(e)}")
+            print(f"Query: {sql_query}")
+            print(f"Params: {params}")
+            if conn:
+                conn.rollback()
+            return None, None
+            
+        except Exception as e:
+            print(f"[ERROR] Unexpected error in execute_sql: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            if conn:
+                conn.rollback()
+            return None, None
+            
         finally:
-            conn.close()
+            if conn:
+                conn.close()
 
     def cleanup_all(self):
         """Deletes all configured database files."""
@@ -193,6 +220,18 @@ class UsersDB(BaseDB):
                     LastPracticed DATE,
                     TimesCorrect INTEGER DEFAULT 0,
                     TimesIncorrect INTEGER DEFAULT 0,
+                    FOREIGN KEY (UserID) REFERENCES users(UserID)
+                );
+
+                CREATE TABLE IF NOT EXISTS lesson_history (
+                    HistoryID INTEGER PRIMARY KEY AUTOINCREMENT,
+                    UserID INTEGER NOT NULL,
+                    QuestionID TEXT NOT NULL,
+                    QuestionType TEXT,
+                    Domain TEXT,
+                    Difficulty TEXT,
+                    IsCorrect INTEGER NOT NULL,
+                    Timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (UserID) REFERENCES users(UserID)
                 );
 
@@ -314,19 +353,23 @@ class UsersDB(BaseDB):
         It attempts to perform a transaction across the two files.
         Returns the new UserID or None on failure.
         """
+        import sqlite3
 
         # 1. Insert into USERS_DATA to get the new UserID
-        result_u, _ = self.execute_sql(
-            self.USERS_KEY,
-            "INSERT INTO users (Email, FirstName) VALUES (?, ?)",
-            (email, first_name)
-        )
-
-        if result_u and "SQL executed successfully" in result_u[0]:
-            # Retrieve the newly inserted UserID
-            _, id_row = self.execute_sql(self.USERS_KEY, "SELECT MAX(UserID) FROM users")
-            user_id = id_row[0][0] if id_row and id_row[0] else None
-
+        conn_users = None
+        conn_logins = None
+        try:
+            conn_users = self._get_connection(self.USERS_KEY)
+            cursor_users = conn_users.cursor()
+            
+            # Insert user
+            cursor_users.execute(
+                "INSERT INTO users (Email, FirstName) VALUES (?, ?)",
+                (email, first_name)
+            )
+            user_id = cursor_users.lastrowid
+            conn_users.commit()
+            
             if user_id is None:
                 print("Could not retrieve new UserID after insert.")
                 return None
@@ -335,33 +378,57 @@ class UsersDB(BaseDB):
             password_hash = generate_password_hash(password)
 
             # 3. Insert into LOGIN_INFORMATION using the retrieved UserID
-            result_l, _ = self.execute_sql(
-                self.LOGIN_KEY,
+            conn_logins = self._get_connection(self.LOGIN_KEY)
+            cursor_logins = conn_logins.cursor()
+            
+            cursor_logins.execute(
                 "INSERT INTO logins (UserID, Username, PasswordHash) VALUES (?, ?, ?)",
                 (user_id, username, password_hash)
             )
-
-            if result_l and "SQL executed successfully" in result_l[0]:
-                # 4. Initialize user progress and settings
-                self.initialize_user_data(user_id)
-                return user_id
+            conn_logins.commit()
+            
+            # 4. Initialize user progress and settings
+            self.initialize_user_data(user_id)
+            return user_id
+            
+        except sqlite3.IntegrityError as e:
+            # Handle duplicate email or username
+            error_msg = str(e).lower()
+            if 'email' in error_msg or 'users.email' in error_msg:
+                print(f"[create_user] Duplicate email: {email}")
+            elif 'username' in error_msg or 'logins.username' in error_msg:
+                print(f"[create_user] Duplicate username: {username}")
+                # Rollback user insertion if username is duplicate
+                if conn_users:
+                    conn_users.rollback()
             else:
-                # Rollback/Cleanup: If login insertion fails (e.g., username not unique),
-                # delete the user row from the USERS_DATA table to prevent orphaned data.
-                print("Login data insertion failed (potential duplicate username). Attempting cleanup of Users row.")
-                self.execute_sql(self.USERS_KEY, "DELETE FROM users WHERE UserID = ?", (user_id,))
-                return None
-
-        print(f"User data insertion failed. Details: {result_u}")
-        return None
+                print(f"[create_user] Integrity error: {e}")
+            return None
+            
+        except Exception as e:
+            print(f"[create_user] Error creating user: {e}")
+            import traceback
+            traceback.print_exc()
+            # Rollback any partial changes
+            if conn_users:
+                conn_users.rollback()
+            if conn_logins:
+                conn_logins.rollback()
+            return None
+            
+        finally:
+            if conn_users:
+                conn_users.close()
+            if conn_logins:
+                conn_logins.close()
 
     def initialize_user_data(self, user_id: int):
         """Initialize progress data and settings for a new user."""
-        # Initialize progress
+        # Initialize user progress with realistic default scores
         self.execute_sql(
             self.PROGRESS_KEY,
-            "INSERT INTO user_progress (UserID) VALUES (?)",
-            (user_id,)
+            "INSERT INTO user_progress (UserID, EBRWScore, MathScore, TotalScore) VALUES (?, ?, ?, ?)",
+            (user_id, 0, 0, 0)
         )
 
         # Initialize settings
@@ -374,8 +441,8 @@ class UsersDB(BaseDB):
         # Initialize default quests
         default_quests = [
             ("Complete 3 Lessons", 3),
-            ("Practice for 15 minutes", 15),
-            ("Learn 10 new words", 10)
+            ("Complete a lesson on 100%", 1),
+            ("Learn 5 new words", 5)
         ]
 
         for quest_name, target in default_quests:
@@ -383,19 +450,6 @@ class UsersDB(BaseDB):
                 self.PROGRESS_KEY,
                 "INSERT INTO daily_quests (UserID, QuestName, TargetValue) VALUES (?, ?, ?)",
                 (user_id, quest_name, target)
-            )
-
-        # Initialize some official test scores
-        test_scores = [
-            ("2025-05-28", 1480, 700, 780),
-            ("2025-07-20", 1560, 760, 800)
-        ]
-
-        for test_date, total, ebrw, math in test_scores:
-            self.execute_sql(
-                self.PROGRESS_KEY,
-                "INSERT INTO official_test_scores (UserID, TestDate, TotalScore, EBRWScore, MathScore) VALUES (?, ?, ?, ?, ?)",
-                (user_id, test_date, total, ebrw, math)
             )
 
         # Initialize SETTINGS row (by Username) if available
@@ -413,7 +467,7 @@ class UsersDB(BaseDB):
             )
             self.execute_sql(
                 self.PROGRESS_KEY,
-                "INSERT OR IGNORE INTO PROGRESS (Username, Score1, Score2, Score3, EstimateEnglish) VALUES (?, 1600, 800, 800, 800)",
+                "INSERT OR IGNORE INTO PROGRESS (Username, Score1, Score2, Score3, EstimateEnglish) VALUES (?, 0, 0, 0, 0)",
                 (username,)
             )
 
@@ -524,42 +578,283 @@ class UsersDB(BaseDB):
 
     # --- Test Scores Methods ---
     def get_official_test_scores(self, user_id: int) -> List[dict]:
-        """Get all official test scores for a user."""
-        cols, rows = self.execute_sql(
-            self.PROGRESS_KEY,
-            "SELECT TestDate, TotalScore, EBRWScore, MathScore FROM official_test_scores WHERE UserID = ? ORDER BY TestDate DESC",
-            (user_id,)
-        )
-        if rows:
-            return [
-                {
-                    'date': row[0],
-                    'total_score': row[1],
-                    'ebrw_score': row[2],
-                    'math_score': row[3]
-                }
-                for row in rows
-            ]
-        return []
+        """Get all official test scores for a user, matching practice test format."""
+        try:
+            # Check if table exists
+            table_check = self.execute_sql(
+                self.PROGRESS_KEY,
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='official_test_scores';"
+            )
+            
+            if not table_check or not table_check[1]:
+                return []
+            
+            # Get all test scores for the user with raw column names
+            result = self.execute_sql(
+                self.PROGRESS_KEY,
+                """
+                SELECT * FROM official_test_scores 
+                WHERE UserID = ?
+                ORDER BY TestDate DESC
+                """,
+                (user_id,)
+            )
+            
+            if not result or not result[1]:
+                return []
+                
+            # Get column names
+            columns = result[0] if result and result[0] else []
+            rows = result[1] if result and result[1] else []
+            test_scores = []
+            
+            for row in rows:
+                score = dict(zip(columns, row))
+                # Format the date
+                test_date = score.get('TestDate', '')
+                if hasattr(test_date, 'strftime'):
+                    test_date = test_date.strftime('%Y-%m-%d')
+                
+                ebrw_score = int(score.get('EBRWScore', 0))
+                math_score = int(score.get('MathScore', 0))
+                # Use the stored TotalScore instead of recalculating to avoid issues
+                stored_total = score.get('TotalScore')
+                # Handle case where TotalScore might be None or invalid
+                if stored_total is not None and stored_total != '':
+                    total_score = int(stored_total)
+                else:
+                    total_score = ebrw_score + math_score
+                
+                test_scores.append({
+                    'id': str(score.get('TestID', '')),
+                    'date': test_date,
+                    'test_date': test_date,
+                    'd': test_date,  # For backward compatibility
+                    'name': 'Official Test',
+                    'e': ebrw_score,
+                    'm': math_score,
+                    'total_score': total_score,
+                    'ebrw_score': ebrw_score,
+                    'math_score': math_score,
+                    'type': 'official',
+                    'max_score': 1600  # Standard max score for official tests
+                })
+            
+            return test_scores
+            
+        except Exception as e:
+            print(f"[ERROR] Error in get_official_test_scores: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return []
+
+    def calculate_estimated_score(self, user_id: int) -> dict:
+        """
+        Calculate estimated SAT score based on lesson performance.
+        Looks at last 108 completed questions and calculates:
+        - 10 points for errors in hard questions
+        - 20 points for errors in medium/easy questions
+        Returns a dict with 'ebrw', 'math', and 'total' scores (200-800)
+        """
+        # Initialize default scores
+        default_scores = {
+            'ebrw': 500,
+            'math': 500,
+            'total': 1000
+        }
+        
+        try:
+            # Get user's lesson history
+            history = self.execute_sql(
+                self.PROGRESS_KEY,
+                """
+                SELECT question_type, is_correct, difficulty
+                FROM lesson_history
+                WHERE user_id = ?
+                ORDER BY timestamp DESC
+                LIMIT 108
+                """,
+                (user_id,)
+            )
+            
+            if not history or not history[1]:
+                return default_scores  # Return default scores if no history
+                
+            # Process results
+            ebrw_errors = {'easy': 0, 'medium': 0, 'hard': 0}
+            math_errors = {'easy': 0, 'medium': 0, 'hard': 0}
+            
+            for row in history[1]:
+                if len(row) < 3:  # Ensure row has all expected values
+                    continue
+                    
+                question_type, is_correct, difficulty = row
+                if is_correct == 1:  # Skip correct answers
+                    continue
+                    
+                difficulty = (difficulty or 'medium').lower()  # Default to medium if not specified
+                
+                if 'math' in str(question_type).lower():
+                    math_errors[difficulty] = math_errors.get(difficulty, 0) + 1
+                else:
+                    ebrw_errors[difficulty] = ebrw_errors.get(difficulty, 0) + 1
+            
+            # Calculate score deductions
+            def calculate_score(errors):
+                # Base score (perfect score)
+                score = 800
+                # Deduct 20 points for each easy/medium error
+                score -= (errors.get('easy', 0) + errors.get('medium', 0)) * 20
+                # Deduct 10 points for each hard error
+                score -= errors.get('hard', 0) * 10
+                # Ensure score is within valid range
+                return max(200, min(800, score))
+            
+            ebrw_score = calculate_score(ebrw_errors)
+            math_score = calculate_score(math_errors)
+            
+            return {
+                'ebrw': ebrw_score,
+                'math': math_score,
+                'total': ebrw_score + math_score
+            }
+            
+        except Exception as e:
+            print(f"[ERROR] Error calculating estimated score: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return default_scores  # Return default scores in case of error
+    
+    def clear_all_official_scores(self, user_id: int) -> bool:
+        """Delete all official test scores for a user and reset the table structure."""
+        try:
+            # First, drop the existing table if it exists
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                "DROP TABLE IF EXISTS official_test_scores;"
+            )
+            
+            # Recreate the table with the correct schema
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                """
+                CREATE TABLE IF NOT EXISTS official_test_scores (
+                    TestID INTEGER PRIMARY KEY,
+                    UserID INTEGER NOT NULL,
+                    TestDate DATE,
+                    TotalScore INTEGER,
+                    EBRWScore INTEGER,
+                    MathScore INTEGER,
+                    TestType TEXT DEFAULT 'official',
+                    FOREIGN KEY (UserID) REFERENCES users(UserID)
+                );
+                """
+            )
+            
+            return True
+            
+        except Exception as e:
+            print(f"[ERROR] Error clearing official scores: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return False
+            
+    def debug_database(self):
+        """Debug function to list all tables and their contents."""
+        try:
+            print("\n[DEBUG] Database Debug Information")
+            print("==============================")
+            
+            # List all tables
+            print("\n[DEBUG] Listing all tables:")
+            tables = self.execute_sql(
+                self.PROGRESS_KEY,
+                "SELECT name FROM sqlite_master WHERE type='table';"
+            )
+            
+            if not tables or not tables[1]:
+                print("No tables found in the database.")
+                return
+                
+            for table in tables[1]:
+                table_name = table[0]
+                print(f"\n[DEBUG] Table: {table_name}")
+                
+                # Get table info
+                print(f"[DEBUG] Structure of {table_name}:")
+                cols, table_info = self.execute_sql(
+                    self.PROGRESS_KEY,
+                    f"PRAGMA table_info({table_name});"
+                )
+                if table_info:
+                    for col in table_info:
+                        print(f"  - {col[1]} ({col[2]})")
+                
+                # Get row count
+                count = self.execute_sql(
+                    self.PROGRESS_KEY,
+                    f"SELECT COUNT(*) FROM {table_name};"
+                )
+                print(f"[DEBUG] Row count: {count[1][0][0] if count and count[1] else 0}")
+                
+                # Get sample data (first 5 rows)
+                try:
+                    sample = self.execute_sql(
+                        self.PROGRESS_KEY,
+                        f"SELECT * FROM {table_name} LIMIT 5;"
+                    )
+                    if sample and sample[1]:
+                        print("[DEBUG] Sample data:")
+                        for row in sample[1]:
+                            print(f"  - {row}")
+                except Exception as e:
+                    print(f"[DEBUG] Could not fetch sample data: {str(e)}")
+                    
+        except Exception as e:
+            print(f"[ERROR] Error in debug_database: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
     def get_practice_results(self, user_id: int) -> List[dict]:
         """Get all practice results for a user."""
         cols, rows = self.execute_sql(
             self.PROGRESS_KEY,
-            "SELECT PracticeName, PracticeDate, Score, MaxScore, PracticeType FROM practice_results WHERE UserID = ? ORDER BY PracticeDate DESC",
+            """
+            SELECT PracticeID, PracticeName, PracticeDate, Score, EBRWScore, MathScore, MaxScore, PracticeType 
+            FROM practice_results 
+            WHERE UserID = ? 
+            ORDER BY PracticeDate DESC
+            """,
             (user_id,)
         )
         if rows:
-            return [
-                {
-                    'name': row[0],
-                    'date': row[1],
-                    'score': row[2],
-                    'max_score': row[3],
-                    'type': row[4]
-                }
-                for row in rows
-            ]
+            results: List[dict] = []
+            for row in rows:
+                practice_id = row[0]
+                name = row[1]
+                date_val = row[2]
+                # Normalize date to string YYYY-MM-DD if it's a date/datetime
+                if hasattr(date_val, 'strftime'):
+                    date_str = date_val.strftime('%Y-%m-%d')
+                else:
+                    date_str = str(date_val) if date_val is not None else ''
+                total = int(row[3]) if row[3] is not None else 0
+                ebrw = int(row[4]) if row[4] is not None else (total // 2 if total else 0)
+                math = int(row[5]) if row[5] is not None else (total // 2 if total else 0)
+                max_score = int(row[6]) if row[6] is not None else 1600
+                practice_type = row[7]
+                results.append({
+                    'id': str(practice_id),
+                    'name': name,
+                    'date': date_str,
+                    'test_date': date_str,
+                    'total_score': total if total else (ebrw + math),
+                    'ebrw_score': ebrw,
+                    'math_score': math,
+                    'max_score': max_score,
+                    'type': practice_type
+                })
+            return results
         return []
 
     # --- Quest Methods ---
@@ -580,24 +875,107 @@ class UsersDB(BaseDB):
                 }
                 for row in rows
             ]
-        return []
-
-    def update_quest_progress(self, user_id: int, quest_name: str, current_value: int):
-        """Update quest progress."""
-        completed = False
-        # Get target value to check if completed
+        # If no quests for today, initialize them
+        self.initialize_daily_quests(user_id)
+        # Return the newly created quests
         cols, rows = self.execute_sql(
             self.PROGRESS_KEY,
-            "SELECT TargetValue FROM daily_quests WHERE UserID = ? AND QuestName = ? AND QuestDate = CURRENT_DATE",
+            "SELECT QuestName, TargetValue, CurrentValue, Completed FROM daily_quests WHERE UserID = ? AND QuestDate = CURRENT_DATE",
+            (user_id,)
+        )
+        if rows:
+            return [
+                {
+                    'name': row[0],
+                    'target': row[1],
+                    'current': row[2],
+                    'completed': bool(row[3])
+                }
+                for row in rows
+            ]
+        return []
+
+    def initialize_daily_quests(self, user_id: int):
+        """Initialize daily quests for a user if they don't exist for today."""
+        # Check if quests already exist for today
+        cols, rows = self.execute_sql(
+            self.PROGRESS_KEY,
+            "SELECT COUNT(*) FROM daily_quests WHERE UserID = ? AND QuestDate = CURRENT_DATE",
+            (user_id,)
+        )
+        if rows and rows[0][0] > 0:
+            return  # Quests already exist for today
+        
+        # Initialize default quests
+        default_quests = [
+            ("Complete 3 Lessons", 3),
+            ("Complete a lesson on 100%", 1),
+            ("Learn 5 new words", 5)
+        ]
+        
+        for quest_name, target in default_quests:
+            self.execute_sql(
+                self.PROGRESS_KEY,
+                "INSERT INTO daily_quests (UserID, QuestName, TargetValue) VALUES (?, ?, ?)",
+                (user_id, quest_name, target)
+            )
+
+    def get_next_practice_number(self, user_id: int) -> int:
+        """Get the next practice number for a user (based on today's practice sessions)."""
+        cols, rows = self.execute_sql(
+            self.PROGRESS_KEY,
+            "SELECT COUNT(*) FROM practice_results WHERE UserID = ? AND PracticeDate = CURRENT_DATE",
+            (user_id,)
+        )
+        current_count = rows[0][0] if rows else 0
+        return current_count + 1
+
+    def reset_daily_quests(self, user_id: int):
+        """Reset all daily quests progress for a user for today and update quest names if needed."""
+        # Delete existing quests for today
+        self.execute_sql(
+            self.PROGRESS_KEY,
+            "DELETE FROM daily_quests WHERE UserID = ? AND QuestDate = CURRENT_DATE",
+            (user_id,)
+        )
+        
+        # Reinitialize quests with current definitions
+        self.initialize_daily_quests(user_id)
+
+    def update_quest_progress(self, user_id: int, quest_name: str, increment_value: int = 1):
+        """Update quest progress by incrementing the current value."""
+        # Get current progress and target value
+        cols, rows = self.execute_sql(
+            self.PROGRESS_KEY,
+            "SELECT CurrentValue, TargetValue FROM daily_quests WHERE UserID = ? AND QuestName = ? AND QuestDate = CURRENT_DATE",
             (user_id, quest_name)
         )
-        if rows and current_value >= rows[0][0]:
-            completed = True
+        
+        if not rows:
+            # Quest doesn't exist, initialize it first
+            self.initialize_daily_quests(user_id)
+            # Try again
+            cols, rows = self.execute_sql(
+                self.PROGRESS_KEY,
+                "SELECT CurrentValue, TargetValue FROM daily_quests WHERE UserID = ? AND QuestName = ? AND QuestDate = CURRENT_DATE",
+                (user_id, quest_name)
+            )
+            if not rows:
+                return  # Still couldn't find/create the quest
+        
+        current_value, target_value = rows[0]
+        new_value = current_value + increment_value
+        
+        # Don't exceed target value
+        if new_value > target_value:
+            new_value = target_value
+        
+        completed = new_value >= target_value
 
         self.execute_sql(
             self.PROGRESS_KEY,
             "UPDATE daily_quests SET CurrentValue = ?, Completed = ? WHERE UserID = ? AND QuestName = ? AND QuestDate = CURRENT_DATE",
-            (current_value, completed, user_id, quest_name)
+            (new_value, completed, user_id, quest_name)
         )
 
     # --- Settings Methods ---
@@ -784,6 +1162,48 @@ class UsersDB(BaseDB):
                 'total_incorrect': total_incorrect or 0
             }
         return {'total_words': 0, 'avg_mastery': 0, 'total_correct': 0, 'total_incorrect': 0}
+
+    def add_lesson_vocabulary_to_review(self, user_id: int, vocabulary_pairs: list):
+        """Add vocabulary words from a lesson to the review dictionary."""
+        for pair in vocabulary_pairs:
+            word = pair.get('word', '')
+            definition = pair.get('definition', '')
+            if word:
+                # Check if word already exists for user
+                cols, rows = self.execute_sql(
+                    self.PROGRESS_KEY,
+                    "SELECT VocabID FROM vocabulary_progress WHERE UserID = ? AND Word = ?",
+                    (user_id, word)
+                )
+                
+                if not rows or not rows[0]:
+                    # Add new word to review dictionary
+                    self.execute_sql(
+                        self.PROGRESS_KEY,
+                        "INSERT INTO vocabulary_progress (UserID, Word, MasteryLevel, LastPracticed, TimesCorrect, TimesIncorrect) VALUES (?, ?, 0, CURRENT_DATE, 0, 0)",
+                        (user_id, word)
+                    )
+
+    def get_vocabulary_review_list(self, user_id: int) -> list:
+        """Get all vocabulary words for review."""
+        cols, rows = self.execute_sql(
+            self.PROGRESS_KEY,
+            "SELECT Word, MasteryLevel, LastPracticed, TimesCorrect, TimesIncorrect FROM vocabulary_progress WHERE UserID = ? ORDER BY LastPracticed DESC",
+            (user_id,)
+        )
+        
+        review_list = []
+        if rows:
+            for row in rows:
+                review_list.append({
+                    'word': row[0],
+                    'mastery_level': row[1],
+                    'last_practiced': row[2],
+                    'times_correct': row[3],
+                    'times_incorrect': row[4]
+                })
+        
+        return review_list
 
 
 users = UsersDB()

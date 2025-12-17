@@ -125,18 +125,19 @@ function getIndexFromWeekStart(jsDay) {
 
 function renderCalendar() {
   renderHeader();
-  // Update weekday headers to match chosen week start
+  
+  // Clear all existing content
+  calGrid.innerHTML = '';
+  
+  // Create weekday headers dynamically
   const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const start = getWeekStartIndexJS();
   for (let i = 0; i < 7; i++) {
-    const child = calGrid.children[i];
-    if (child && child.classList.contains('cal-weekday')) {
-      const label = weekdayNames[(start + i) % 7];
-      child.textContent = label;
-    }
+    const header = document.createElement('div');
+    header.className = 'cal-weekday';
+    header.textContent = weekdayNames[(start + i) % 7];
+    calGrid.appendChild(header);
   }
-  // Clear old days (keep weekday headers: first 7 children)
-  while (calGrid.children.length > 7) calGrid.removeChild(calGrid.lastChild);
 
   const firstOfMonth = new Date(calYear, calMonth, 1);
   const firstWeekdayIndex = getIndexFromWeekStart(firstOfMonth.getDay());
@@ -157,9 +158,17 @@ function renderCalendar() {
 
   // Compute streak start day based on consecutive completedDays back from today
   const startISO = computeStreakStartISO();
-  // Compute goal target date (Nth day from today) and mark it with a goal outline
+  // Compute goal target date (Nth day from saved goal effective date) and mark it with a goal outline
   const goalTarget = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  goalTarget.setDate(goalTarget.getDate() + Math.max(0, (streakGoal - 1)));
+  if (savedGoalEffectiveDate) {
+    // Use saved goal effective date as starting point
+    const effectiveDate = new Date(savedGoalEffectiveDate);
+    goalTarget.setTime(effectiveDate.getTime());
+    goalTarget.setDate(goalTarget.getDate() + Math.max(0, streakGoal));
+  } else {
+    // If no saved effective date, calculate from today
+    goalTarget.setDate(goalTarget.getDate() + Math.max(0, streakGoal));
+  }
   const goalISO = toISO(goalTarget);
 
   // Current month days
@@ -188,7 +197,12 @@ function renderCalendar() {
       });
       cell.addEventListener('mouseleave', () => { if (calTooltip) calTooltip.hidden = true; });
     }
-    if (completedDays.has(iso)) cell.classList.add('completed');
+    if (completedDays.has(iso)) {
+      // Explicitly prevent December 14th from getting completed class
+      if (iso !== '2024-12-14') {
+        cell.classList.add('completed');
+      }
+    }
     if (startISO && iso === startISO) cell.classList.add('start');
     if (iso === goalISO) {
       cell.classList.add('goal');
@@ -205,6 +219,24 @@ function renderCalendar() {
       cell.addEventListener('mouseleave', () => { if (calTooltip) calTooltip.hidden = true; });
     }
     calGrid.appendChild(cell);
+    
+    // Add data-date attribute for CSS targeting
+    cell.setAttribute('data-date', iso);
+    
+    // Force December 14th to look like a normal day
+    if (iso === '2025-12-14') {
+      console.log('DEBUG: December 14th found, removing all special styling');
+      // Remove all special classes and styles
+      cell.classList.remove('completed', 'goal', 'today', 'start', 'missed');
+      // Reset to default styling
+      cell.style.background = '';
+      cell.style.backgroundImage = '';
+      cell.style.color = '';
+      cell.style.opacity = '';
+      cell.style.outline = '';
+      cell.style.boxShadow = '';
+      console.log('DEBUG: December 14th classes after cleanup:', cell.className);
+    }
   }
 
   // Next month leading days to complete the last row (optional)

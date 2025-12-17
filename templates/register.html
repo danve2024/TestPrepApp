@@ -1,44 +1,316 @@
 {% extends "menu.html" %}
 
 {% block content %}
-<div class="content-card" style="width: 450px;">
+<div class="content-card" style="max-width: 600px; width: 100%;">
     <h1>Create Account</h1>
-    <form method="POST" action="{{ url_for('register') }}" style="width: 100%;">
-        <input type="text" id="first_name" name="first_name" placeholder="First Name" required>
-        <input type="text" id="last_name" name="last_name" placeholder="Last Name (Surname)">
-        <input type="email" id="email" name="email" placeholder="Email Address (Unique)" required>
-        <input type="text" id="username" name="username" placeholder="Choose a Username (Unique)" required>
-        <div class="password-field" style="position: relative; color: var(--text-color);">
-            <input type="password" id="password" name="password" placeholder="Create Password" required style="padding-right: 44px;">
-            <span id="togglePassword" aria-label="Show password" role="button" tabindex="0" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; padding:0; line-height:0; display:flex; align-items:center; justify-content:center; color: currentColor;">
-                <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8Z"/><circle cx="12" cy="12" r="3"/></svg>
-                <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.58 10.58a2 2 0 002.84 2.84"/><path d="M16.24 16.24A10.94 10.94 0 0112 20C6 20 2 12 2 12a21.8 21.8 0 014.62-5.94"/><path d="M14.12 5.12A10.94 10.94 0 0122 12s-1.64 3.28-4.76 5.76"/></svg>
-            </span>
+    <form method="POST" action="{{ url_for('register') }}" id="registrationForm" style="width: 100%;">
+        <!-- Basic Information -->
+        <h3>Basic Information</h3>
+        <div class="form-section">
+            <input type="text" id="first_name" name="first_name" placeholder="First Name" required>
+            <input type="text" id="last_name" name="last_name" placeholder="Last Name (Surname)">
+            <input type="email" id="email" name="email" placeholder="Email Address (Unique)" required>
+            <input type="text" id="username" name="username" placeholder="Choose a Username (Unique)" required>
+            <div class="password-field" style="position: relative; color: var(--text-color);">
+                <input type="password" id="password" name="password" placeholder="Create Password" required style="padding-right: 44px;">
+                <span id="togglePassword" aria-label="Show password" role="button" tabindex="0" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; padding:0; line-height:0; display:flex; align-items:center; justify-content:center; color: currentColor;">
+                    <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><path d="M3 3l18 18"/><path d="M10.58 10.58a2 2 0 002.84 2.84"/><path d="M16.24 16.24A10.94 10.94 0 0112 20C6 20 2 12 2 12a21.8 21.8 0 014.62-5.94"/><path d="M14.12 5.12A10.94 10.94 0 0122 12s-1.64 3.28-4.76 5.76"/></svg>
+                </span>
+            </div>
+            <input type="date" id="birth_date" name="birth_date" placeholder="Date of Birth">
         </div>
-        <input type="date" id="birth_date" name="birth_date" placeholder="Date of Birth">
-        <button type="submit" class="start" style="width: auto; display: block; margin: 10px auto; color: white; padding: 10px 24px;">
-            Register
+
+        <!-- Official SAT Results -->
+        <h3 style="margin-top: 20px;">Official SAT Results (Optional)</h3>
+        <div class="form-section" id="satResultsSection">
+            <div class="form-group">
+                <label for="has_taken_sat">Have you taken the official SAT before?</label>
+                <div class="radio-group" style="display: flex; gap: 15px; margin: 10px 0;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="has_taken_sat" value="yes" onchange="toggleSatResults(true)" style="margin-right: 5px;"> Yes
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="has_taken_sat" value="no" onchange="toggleSatResults(false)" checked style="margin-right: 5px;"> No
+                    </label>
+                </div>
+            </div>
+
+            <div id="satResultsFields" style="display: none; margin-top: 15px; border-left: 3px solid var(--primary-color); padding-left: 15px;">
+                <div class="form-group">
+                    <label for="sat_test_date">Test Date</label>
+                    <input type="date" id="sat_test_date" name="sat_test_date" class="sat-input">
+                </div>
+                <div class="form-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="sat_ebrw_score">EBRW Score (200-800)</label>
+                        <input type="number" id="sat_ebrw_score" name="sat_ebrw_score" min="200" max="800" step="10" class="sat-input">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label for="sat_math_score">Math Score (200-800)</label>
+                        <input type="number" id="sat_math_score" name="sat_math_score" min="200" max="800" step="10" class="sat-input">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn-secondary" onclick="addAnotherSatResult()" style="padding: 5px 10px; font-size: 0.9em;">+ Add Another Test</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Practice Test Results -->
+        <h3 style="margin-top: 20px;">Practice Test Results (Optional)</h3>
+        <div class="form-section" id="practiceTestsSection">
+            <div class="form-group">
+                <label for="has_practice_tests">Have you taken any practice tests?</label>
+                <div class="radio-group" style="display: flex; gap: 15px; margin: 10px 0;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="has_practice_tests" value="yes" onchange="togglePracticeTests(true)" style="margin-right: 5px;"> Yes
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="radio" name="has_practice_tests" value="no" onchange="togglePracticeTests(false)" checked style="margin-right: 5px;"> No
+                    </label>
+                </div>
+            </div>
+
+            <div id="practiceTestFields" style="display: none; margin-top: 15px; border-left: 3px solid var(--primary-color); padding-left: 15px;">
+                <div class="practice-test-entry">
+                    <div class="form-group">
+                        <label for="practice_test_name">Test Name (e.g., Khan Academy, Princeton Review, etc.)</label>
+                        <input type="text" id="practice_test_name" name="practice_test_name[]" class="practice-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="practice_test_date">Test Date</label>
+                        <input type="date" id="practice_test_date" name="practice_test_date[]" class="practice-input">
+                    </div>
+                    <div class="form-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="practice_ebrw_score">EBRW Score (200-800)</label>
+                            <input type="number" id="practice_ebrw_score" name="practice_ebrw_score[]" min="200" max="800" step="10" class="practice-input">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="practice_math_score">Math Score (200-800)</label>
+                            <input type="number" id="practice_math_score" name="practice_math_score[]" min="200" max="800" step="10" class="practice-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn-secondary" onclick="addAnotherPracticeTest()" style="padding: 5px 10px; font-size: 0.9em;">+ Add Another Practice Test</button>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="start" style="width: auto; display: block; margin: 30px auto 10px; color: white; padding: 10px 24px;">
+            Complete Registration
         </button>
     </form>
-    <p style="margin-top: 20px; font-size: 14px;">Already have an account? <a href="{{ url_for('login') }}" style="color: var(--primary-color); font-weight: bold;">Log In.</a></p>
+    <p style="margin-top: 20px; font-size: 14px; text-align: center;">
+        Already have an account? <a href="{{ url_for('login') }}" style="color: var(--primary-color); font-weight: bold;">Log In</a>
+    </p>
 </div>
+
+<style>
+    .form-section {
+        margin-bottom: 25px;
+        padding: 15px;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: var(--text-color);
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="date"],
+    input[type="number"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+    }
+    
+    input:focus {
+        border-color: var(--primary-color);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(88, 204, 2, 0.2);
+    }
+    
+    .btn-secondary {
+        background-color: var(--card-color);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-secondary:hover {
+        background-color: var(--border-color);
+    }
+    
+    .practice-test-entry {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: var(--card-color);
+        border: 1px solid var(--border-color);
+    }
+    
+    .practice-test-entry:not(:last-child) {
+        margin-bottom: 25px;
+        padding-bottom: 25px;
+        border-bottom: 2px dashed var(--border-color);
+    }
+</style>
+
 <script>
-(function(){
-  const pwd = document.getElementById('password');
-  const btn = document.getElementById('togglePassword');
-  const eyeOpen = document.getElementById('eyeOpen');
-  const eyeClosed = document.getElementById('eyeClosed');
-  if (btn && pwd){
-    btn.addEventListener('click', function(){
-      const isHidden = pwd.type === 'password';
-      pwd.type = isHidden ? 'text' : 'password';
-      btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
-      if (eyeOpen && eyeClosed){
-        eyeOpen.style.display = isHidden ? 'none' : '';
-        eyeClosed.style.display = isHidden ? '' : 'none';
-      }
+    // Toggle SAT results section
+    function toggleSatResults(show) {
+        const satResultsFields = document.getElementById('satResultsFields');
+        const satInputs = satResultsFields.querySelectorAll('.sat-input');
+        
+        if (show) {
+            satResultsFields.style.display = 'block';
+            satInputs.forEach(input => input.required = true);
+        } else {
+            satResultsFields.style.display = 'none';
+            satInputs.forEach(input => input.required = false);
+        }
+    }
+    
+    // Toggle practice tests section
+    function togglePracticeTests(show) {
+        const practiceTestFields = document.getElementById('practiceTestFields');
+        const practiceInputs = practiceTestFields.querySelectorAll('.practice-input');
+        
+        if (show) {
+            practiceTestFields.style.display = 'block';
+            practiceInputs.forEach(input => input.required = true);
+        } else {
+            practiceTestFields.style.display = 'none';
+            practiceInputs.forEach(input => input.required = false);
+        }
+    }
+    
+    // Add another SAT result entry
+    function addAnotherSatResult() {
+        const container = document.getElementById('satResultsFields');
+        const newEntry = document.createElement('div');
+        newEntry.className = 'practice-test-entry';
+        newEntry.innerHTML = `
+            <div class="form-group">
+                <label>Additional SAT Result</label>
+                <button type="button" class="btn-secondary" onclick="this.parentElement.parentElement.remove()" style="float: right; padding: 2px 8px; font-size: 0.8em;">Remove</button>
+            </div>
+            <div class="form-group">
+                <label>Test Date</label>
+                <input type="date" name="sat_test_date[]" class="sat-input" required>
+            </div>
+            <div class="form-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>EBRW Score (200-800)</label>
+                    <input type="number" name="sat_ebrw_score[]" min="200" max="800" step="10" class="sat-input" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Math Score (200-800)</label>
+                    <input type="number" name="sat_math_score[]" min="200" max="800" step="10" class="sat-input" required>
+                </div>
+            </div>
+        `;
+        container.insertBefore(newEntry, container.lastElementChild);
+    }
+    
+    // Add another practice test entry
+    function addAnotherPracticeTest() {
+        const container = document.getElementById('practiceTestFields');
+        const newEntry = document.createElement('div');
+        newEntry.className = 'practice-test-entry';
+        newEntry.innerHTML = `
+            <div class="form-group">
+                <label>Additional Practice Test</label>
+                <button type="button" class="btn-secondary" onclick="this.parentElement.parentElement.remove()" style="float: right; padding: 2px 8px; font-size: 0.8em;">Remove</button>
+            </div>
+            <div class="form-group">
+                <label>Test Name</label>
+                <input type="text" name="practice_test_name[]" class="practice-input" required>
+            </div>
+            <div class="form-group">
+                <label>Test Date</label>
+                <input type="date" name="practice_test_date[]" class="practice-input" required>
+            </div>
+            <div class="form-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>EBRW Score (200-800)</label>
+                    <input type="number" name="practice_ebrw_score[]" min="200" max="800" step="10" class="practice-input" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Math Score (200-800)</label>
+                    <input type="number" name="practice_math_score[]" min="200" max="800" step="10" class="practice-input" required>
+                </div>
+            </div>
+        `;
+        container.insertBefore(newEntry, container.lastElementChild);
+    }
+    
+    // Form validation
+    document.getElementById('registrationForm').addEventListener('submit', function(e) {
+        // Validate SAT scores are within range if provided
+        const satScores = document.querySelectorAll('input[name^="sat_"][type="number"]');
+        for (const input of satScores) {
+            if (input.value && (input.value < 200 || input.value > 800)) {
+                e.preventDefault();
+                alert('SAT scores must be between 200 and 800');
+                input.focus();
+                return false;
+            }
+        }
+        
+        // Validate practice test scores are within range if provided
+        const practiceScores = document.querySelectorAll('input[name^="practice_"][type="number"]');
+        for (const input of practiceScores) {
+            if (input.value && (input.value < 200 || input.value > 800)) {
+                e.preventDefault();
+                alert('Practice test scores must be between 200 and 800');
+                input.focus();
+                return false;
+            }
+        }
+        
+        return true;
     });
-  }
-})();
+    
+    // Password visibility toggle
+    (function(){
+        const pwd = document.getElementById('password');
+        const btn = document.getElementById('togglePassword');
+        const eyeOpen = document.getElementById('eyeOpen');
+        const eyeClosed = document.getElementById('eyeClosed');
+        if (btn && pwd) {
+            btn.addEventListener('click', function(){
+                const isHidden = pwd.type === 'password';
+                pwd.type = isHidden ? 'text' : 'password';
+                btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+                if (eyeOpen && eyeClosed) {
+                    eyeOpen.style.display = isHidden ? 'none' : '';
+                    eyeClosed.style.display = isHidden ? '' : 'none';
+                }
+            });
+        }
+    })();
 </script>
 {% endblock %}

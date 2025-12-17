@@ -1,15 +1,390 @@
-/* Lessons page styles */
+/* Duolingo-style Skill Tree */
 
-/* Buttons for lesson map */
-.lesson-button { display: inline-block; background-color: var(--primary-color); color: var(--text-color); font-weight: 700; font-size: calc(18px * var(--font-scale)); border: none; border-radius: 16px; padding: 14px 28px; box-shadow: 0 4px 0 #46a302; transition: all 0.15s ease; cursor: pointer; text-align: center; text-decoration: none; user-select: none; min-width: 120px; }
-.lesson-button:hover { background-color: #6FE200; box-shadow: 0 2px 0 var(--primary-color); transform: translateY(2px); }
-.lesson-button:active { background-color: #46A302; box-shadow: 0 2px 0 #2e8000; transform: translateY(4px); }
-.lesson-button:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; transform: none; }
+.skill-tree-container {
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 42px 20px 0;
+    box-sizing: border-box;
+}
 
-/* Lessons list container with hidden scrollbar */
-.lessons-container { position: absolute; top: 105px; bottom: 100px; left: 0; right: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 24px; padding-top: 40px; padding-bottom: 124px; scroll-behavior: smooth; }
-.lessons-container::-webkit-scrollbar { width: 0; height: 0; }
+.skill-tree-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
 
-/* Row layout */
-.row { display: flex; justify-content: center; gap: 24px; width: 100%; }
-.row-container { display: flex; gap: 24px; justify-content: center; flex-wrap: nowrap; }
+.skill-tree-header h1 {
+    color: var(--text-color);
+    margin-bottom: 10px;
+    font-size: 2.2rem;
+    font-weight: 700;
+}
+
+.skill-tree-header p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Skill path container */
+.skill-path {
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+}
+
+.skill-path::before {
+    display: none;
+}
+
+/* Difficulty section */
+.difficulty-section {
+    margin-bottom: 50px;
+    background: transparent;
+    padding: 0;
+    width: 100%;
+}
+
+.difficulty-header {
+    background: transparent;
+    padding: 10px 0 20px;
+    width: 100%;
+    text-align: center;
+}
+
+.difficulty-header h2 {
+    margin: 0 auto;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-color);
+    text-align: center;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.difficulty-header h2::before,
+.difficulty-header h2::after {
+    content: '';
+    width: clamp(140px, 24vw, 220px);
+    height: 0;
+    border-top: 5px solid #ffffff;
+    box-shadow: 0 -8px 0 #ffffff;
+}
+
+/* Domain card */
+.domain-card {
+    position: relative;
+    width: 100%;
+    max-width: 360px;
+    margin: 0 auto 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.domain-card::before {
+    display: none;
+}
+
+.domain-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
+    margin-bottom: 36px;
+    text-align: center;
+}
+
+.domain-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.domain-title {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.6em;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+}
+
+.domain-title::before,
+.domain-title::after {
+    content: '';
+    width: clamp(110px, 18vw, 180px);
+    height: 0;
+    border-top: 3px solid #ffffff;
+}
+
+/* Skills container */
+.skills-container {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    gap: 32px;
+    width: 100%;
+    align-items: center;
+    margin-top: 6px;
+}
+
+/* Skill card */
+.skill-card {
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+}
+
+.skill-card:hover {
+    transform: none;
+}
+
+.skill-header {
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.skill-title {
+    margin: 0;
+    color: var(--text-color);
+    font-size: 1.5em;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.skill-title::before,
+.skill-title::after {
+    content: '';
+    width: clamp(90px, 15vw, 160px);
+    height: 0;
+    border-top: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+.progress-container,
+.progress-bar,
+.progress-fill,
+.progress-text {
+    display: none;
+}
+
+.skill-description {
+    color: var(--text-color);
+    font-size: 0.85em;
+    margin: 6px 0 0;
+    line-height: 1.4;
+}
+
+.lesson-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 25px;
+    margin-top: 38px;
+    width: 100%;
+}
+
+.lesson-button {
+    --sin-offset: 0;
+    --vertical-offset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: #ffffff;
+    font-size: 20px;
+    border: none;
+    box-shadow: 0 5px 0 #46a302;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    user-select: none;
+    margin: 0 auto;
+    transform: translateX(var(--sin-offset)) translateY(var(--vertical-offset));
+    position: relative;
+}
+
+.lesson-button::before {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.lesson-button::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-2px);
+    border: 6px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.8);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    z-index: 999;
+}
+
+.lesson-button:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-12px);
+}
+
+.lesson-button:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-6px);
+}
+
+.lesson-button.theory {
+    --sin-offset: 0px;
+}
+
+.lesson-button.practice[data-practice-index="1"] {
+    --sin-offset: -35px;
+}
+
+.lesson-button.practice[data-practice-index="2"] {
+    --sin-offset: -35px;
+}
+
+.lesson-button.practice[data-practice-index="3"] {
+    --sin-offset: 0px;
+}
+
+.lesson-button.practice[data-practice-index="4"] {
+    --sin-offset: 35px;
+}
+
+.lesson-button.practice[data-practice-index="5"] {
+    --sin-offset: 35px;
+}
+
+.lesson-button.mastery {
+    --sin-offset: 0px;
+}
+
+.lesson-button:hover {
+    --vertical-offset: 4px;
+}
+
+.lesson-button:active {
+    --vertical-offset: 8px;
+    background-color: #46A302;
+}
+
+.lesson-button:disabled {
+    background-color: #ccc;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .skill-tree-container {
+        padding: 0 15px;
+    }
+    
+    .skill-path {
+        padding-left: 30px;
+    }
+    
+    .difficulty-section {
+        padding-left: 15px;
+    }
+    
+    .domain-card {
+        margin-left: 15px;
+        padding-left: 15px;
+        margin: 0 auto 10px;
+    }
+    
+    .skill-tree-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .difficulty-header h2 {
+        font-size: 1.2rem;
+        padding: 8px 20px;
+    }
+    
+    .lesson-button {
+        width: 50px;
+        height: 50px;
+        font-size: 16px;
+    }
+    
+    .lesson-buttons {
+        gap: 20px;
+    }
+    
+    .lesson-button.theory {
+        --sin-offset: 0px;
+    }
+
+    .lesson-button.practice[data-practice-index="1"] {
+        --sin-offset: -20px;
+    }
+
+    .lesson-button.practice[data-practice-index="2"] {
+        --sin-offset: -20px;
+    }
+
+    .lesson-button.practice[data-practice-index="4"] {
+        --sin-offset: 20px;
+    }
+
+    .lesson-button.practice[data-practice-index="5"] {
+        --sin-offset: 20px;
+    }
+}
+
+/* (Dark mode, extra button overrides, and duplicate progress styles removed.
+   The lane now relies on the global theme colors from base.css and the
+   primary lesson button styles defined above in this file.) */

@@ -1,0 +1,84 @@
+{% extends 'menu.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/skill_tree.css') }}">
+
+<div class="skill-tree-container">
+    {% for difficulty in ['Easy', 'Medium', 'Hard'] %}
+    <div class="difficulty-section" data-difficulty="{{ difficulty|lower }}">
+        <div class="difficulty-header">
+            <h2>{{ difficulty }}</h2>
+            <div class="divider"></div>
+        </div>
+        
+        <div class="domains-container">
+            {% for domain in domains %}
+            <div class="domain-card" data-domain="{{ domain.id }}">
+                <div class="domain-header">
+                    <div class="domain-icon">
+                        {{ domain.id }}
+                    </div>
+                    <h3 class="domain-title">{{ domain.name }}</h3>
+                </div>
+                
+                <div class="skills-container">
+                    {% for skill in domain.skills %}
+                    <div class="skill-card">
+                        <div class="skill-header">
+                            <h4 class="skill-title">{{ skill.name }}</h4>
+                            <div class="progress-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: {{ skill.progress|default(0) }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if skill.description %}
+                        <p class="skill-description">{{ skill.description }}</p>
+                        {% endif %}
+                        
+                        <div class="lesson-buttons">
+                            <a href="{{ url_for('lesson', difficulty=difficulty|lower, domain=domain.id, skill=skill.id, type='theory') }}" 
+                               class="lesson-button theory">
+                                Theory
+                            </a>
+                            <a href="{{ url_for('lesson', difficulty=difficulty|lower, domain=domain.id, skill=skill.id, type='practice') }}" 
+                               class="lesson-button practice">
+                                Practice
+                            </a>
+                            <a href="{{ url_for('lesson', difficulty=difficulty|lower, domain=domain.id, skill=skill.id, type='mastery') }}" 
+                               class="lesson-button mastery">
+                                Mastery Test
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animation to new/unlocked content
+    const skillCards = document.querySelectorAll('.skill-card');
+    skillCards.forEach((card, index) => {
+        setTimeout(() => {
+            card.classList.add('highlight');
+        }, 100 * index);
+    });
+    
+    // Handle lesson button clicks
+    const lessonButtons = document.querySelectorAll('.lesson-button');
+    lessonButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Add loading state or other interactions here
+            this.classList.add('active');
+        });
+    });
+});
+</script>
+{% endblock %}

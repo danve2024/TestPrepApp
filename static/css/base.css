@@ -7,8 +7,11 @@
     --background-color: #FFFFFF;
     --card-color: #F5F5F5;
     --text-color: #3C3C3C;
+    --text-muted: #666666;
     --header-bg: #FFFFFF;
     --footer-bg: #FFFFFF;
+    --input-bg: #FFFFFF;
+    --border-color: #DDDDDD;
     --shadow-color: rgba(0, 0, 0, 0.1);
     --transition-speed: 0.3s;
     --font-scale: 1;
@@ -21,8 +24,11 @@
     --background-color: #1A1A1A;
     --card-color: #2D2D2D;
     --text-color: #F5F5F5;
+    --text-muted: #AAAAAA;
     --header-bg: #2D2D2D;
     --footer-bg: #2D2D2D;
+    --input-bg: #3A3A3A;
+    --border-color: #555555;
     --shadow-color: rgba(0, 0, 0, 0.3);
 }
 

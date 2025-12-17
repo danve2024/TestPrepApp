@@ -32,7 +32,7 @@
 /* Grid (7 columns, Monday-first) */
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
 .cal-weekday { text-align: center; font-size: calc(12px * var(--font-scale)); font-weight: 700; color: var(--text-color); opacity: 0.7; padding: 6px 0; }
-.cal-day { position: relative; background: #fff; color: #000; border-radius: 12px; min-height: 64px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-weight: 700; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.cal-day { position: relative; background: #fff; color: #000; border-radius: 12px; min-height: 64px; width: 100%; max-width: 100%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-weight: 700; transition: transform 0.15s ease, box-shadow 0.15s ease; box-sizing: border-box; }
 .dark-theme .cal-day { background: #1f1f1f; color: #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 .cal-day:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
 .cal-day.other-month { opacity: 0.35; }
@@ -41,7 +41,6 @@
 /* Completed / today states */
 .cal-day.completed { background: linear-gradient(135deg, var(--primary-color), #45a700); color: #fff; }
 .cal-day.completed .date-num { color: #fff; opacity: 0.9; }
-.cal-day.today { outline: 2px solid var(--secondary-color); outline-offset: -2px; }
 .cal-day.missed { filter: grayscale(0.3); opacity: 0.7; }
 /* Streak start marker */
 .cal-day.start { box-shadow: 0 0 0 3px rgba(88,204,2,0.35) inset; }

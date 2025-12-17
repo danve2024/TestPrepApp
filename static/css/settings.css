@@ -44,6 +44,12 @@ input:checked + .slider:before { transform: translateX(26px); }
   box-shadow: 0 4px 0 rgba(0,0,0,0.06);
 }
 .btn-secondary.enabled:hover { transform: translateY(-2px); }
+.btn-secondary.saved {
+  background: #4CAF50;
+  color: #fff;
+  border-color: #4CAF50;
+  cursor: default;
+}
 
 .btn-logout {
   border-radius: 16px;

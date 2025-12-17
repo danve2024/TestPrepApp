@@ -3,6 +3,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
 
 <div class="content-card profile-card">
+    <form id="profile-form" method="POST">
     <div class="avatar-container" onclick="avatarClick()">
         <div class="avatar-placeholder">Soon...</div>
     </div>
@@ -13,16 +14,20 @@
         <input placeholder="Email" type="email" name="email" value="{{ session.get('email', 'No email') }}">
         <input placeholder="Username" name="username" value="{{ session.get('username', 'No username') }}">
         <div class="account-type-label">Date of birth</div>
-        <input type="date" id="birthDate" max="{{ today }}">
+        <input type="date" id="birthDate" name="birth_date" max="{{ today }}">
 
         <div class="account-type-label">Type of account</div>
         <div class="account-toggle">
             <div id="privateBtn" class="option-button">Private</div>
             <div id="publicBtn" class="option-button">Public</div>
         </div>
+        <input type="hidden" id="accountType" name="account_type" value="private">
         <div id="accountInfo" class="account-info"></div>
     </div>
+    </form>
 </div>
+
+<div id="saveNotification" class="save-notification"></div>
 
 <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
 

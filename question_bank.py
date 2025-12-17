@@ -8,7 +8,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), 'question_bank.db')
 PDF_PATH_DEFAULT = os.path.join(os.path.dirname(__file__), 'question_bank.pdf')
 TXT_PATH_DEFAULT = os.path.join(os.path.dirname(__file__), 'static', 'question_bank.txt')
 
-SCHEMA = """
+SCHEMA_QUESTIONS = """
 CREATE TABLE IF NOT EXISTS QUESTIONS (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     QuestionID TEXT,
@@ -26,6 +26,17 @@ CREATE TABLE IF NOT EXISTS QUESTIONS (
 );
 """
 
+SCHEMA_THEORY = """
+CREATE TABLE IF NOT EXISTS theory_texts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    skill_id TEXT,
+    difficulty_level TEXT,
+    section_order INTEGER,
+    text_type TEXT,
+    content TEXT
+);
+"""
+
 
 def get_conn():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -34,7 +45,8 @@ def get_conn():
 
 def init_db():
     with get_conn() as conn:
-        conn.execute(SCHEMA)
+        conn.execute(SCHEMA_QUESTIONS)
+        conn.execute(SCHEMA_THEORY)
         # Lightweight migration: ensure QuestionID column and unique index exist
         cur = conn.cursor()
         cur.execute("PRAGMA table_info(QUESTIONS)")
@@ -60,9 +72,12 @@ def _row_to_mcq(row: sqlite3.Row) -> Dict:
             correct_text = options[idx]
     else:
         correct_text = row['Correct']
+    # Prefer provided QuestionID; fallback to internal row id
+    qid = row['QuestionID'] if row['QuestionID'] else f"dbid:{row['id']}"
     return {
         'type': 'multiple_choice',
-        'question_id': row['QuestionID'],
+        'question_id': qid,
+        'db_id': row['id'],
         'domain': row['Domain'],
         'skill': row['Skill'],
         'text': row['Text'],
@@ -82,24 +97,58 @@ def get_random_questions(limit: Optional[int] = None) -> List[Dict]:
         if limit is None:
             cur.execute("SELECT * FROM QUESTIONS ORDER BY RANDOM()")
         else:
-            cur.execute("SELECT * FROM QUESTIONS ORDER BY RANDOM() LIMIT ?", (limit,))
+            # Get half the limit to ensure we have enough unique questions
+            half_limit = max(1, limit // 2)
+            cur.execute("SELECT * FROM QUESTIONS ORDER BY RANDOM() LIMIT ?", (half_limit,))
         rows = cur.fetchall()
-    return [_row_to_mcq(r) for r in rows]
+    
+    # Convert to question dicts
+    questions = [_row_to_mcq(r) for r in rows]
+    
+    # If limit was specified and we need to return more questions than we have unique ones,
+    # duplicate the questions to reach the desired count
+    if limit is not None and len(questions) * 2 <= limit:
+        questions = questions * 2  # Duplicate all questions
+        random.shuffle(questions)  # Shuffle so duplicates aren't adjacent
+    
+    return questions
 
 
 def get_questions_by_ids(ids: List[str]) -> List[Dict]:
     if not ids:
         return []
     init_db()
-    placeholders = ",".join(["?"] * len(ids))
+    # Separate synthetic dbids (prefix 'dbid:') from normal QuestionIDs
+    qid_list: List[str] = []
+    dbid_list: List[int] = []
+    for i in ids:
+        if isinstance(i, str) and i.startswith('dbid:'):
+            try:
+                dbid_list.append(int(i.split(':', 1)[1]))
+            except Exception:
+                pass
+        else:
+            qid_list.append(i)
+    by_key: Dict[str, Dict] = {}
     with get_conn() as conn:
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
-        cur.execute(f"SELECT * FROM QUESTIONS WHERE QuestionID IN ({placeholders})", tuple(ids))
-        rows = cur.fetchall()
-    # Map by id for order preservation
-    by_id = {r['QuestionID']: _row_to_mcq(r) for r in rows}
-    return [by_id[i] for i in ids if i in by_id]
+        if qid_list:
+            placeholders = ",".join(["?"] * len(qid_list))
+            cur.execute(f"SELECT * FROM QUESTIONS WHERE QuestionID IN ({placeholders})", tuple(qid_list))
+            rows = cur.fetchall()
+            for r in rows:
+                mcq = _row_to_mcq(r)
+                by_key[mcq['question_id']] = mcq
+        if dbid_list:
+            placeholders = ",".join(["?"] * len(dbid_list))
+            cur.execute(f"SELECT * FROM QUESTIONS WHERE id IN ({placeholders})", tuple(dbid_list))
+            rows2 = cur.fetchall()
+            for r in rows2:
+                mcq = _row_to_mcq(r)
+                by_key[mcq['question_id']] = mcq
+    # Reconstruct list preserving input order
+    return [by_key[i] for i in ids if i in by_key]
 
 
 def count_questions() -> int:
@@ -109,6 +158,65 @@ def count_questions() -> int:
         cur.execute("SELECT COUNT(*) FROM QUESTIONS")
         (cnt,) = cur.fetchone()
         return int(cnt or 0)
+
+
+def get_questions_filtered(
+    difficulty: Optional[str] = None,
+    domain: Optional[str] = None,
+    skill: Optional[str] = None,
+    limit: Optional[int] = None,
+) -> List[Dict]:
+    """Return questions filtered by difficulty, domain, and skill.
+
+    This is used by SAT lesson lane to ensure that each skill block only
+    pulls questions that match the currently selected difficulty tier,
+    domain, and skill.
+    """
+    init_db()
+    clauses = []
+    params: List[str] = []
+
+    if difficulty:
+        clauses.append("Difficulty = ?")
+        params.append(difficulty)
+    if domain:
+        clauses.append("Domain = ?")
+        params.append(domain)
+    if skill:
+        clauses.append("Skill = ?")
+        params.append(skill)
+
+    where_sql = ""
+    if clauses:
+        where_sql = " WHERE " + " AND ".join(clauses)
+
+    sql = "SELECT * FROM QUESTIONS" + where_sql + " ORDER BY RANDOM()"
+
+    if limit is not None:
+        sql += " LIMIT ?"
+        params.append(limit)
+
+    with get_conn() as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute(sql, tuple(params))
+        rows = cur.fetchall()
+
+    return [_row_to_mcq(r) for r in rows]
+
+
+def get_theory_sections(skill_id: str, difficulty_level: str) -> List[Dict]:
+    init_db()
+    with get_conn() as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT section_order, text_type, content FROM theory_texts "
+            "WHERE skill_id=? AND difficulty_level=? ORDER BY section_order",
+            (skill_id, difficulty_level),
+        )
+        rows = cur.fetchall()
+    return [dict(section_order=row['section_order'], text_type=row['text_type'], content=row['content']) for row in rows]
 
 
 # ---------------- PDF Parsing ----------------

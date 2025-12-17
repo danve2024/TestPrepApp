@@ -1,13 +1,185 @@
 {% extends "menu.html" %}
 
 {% block content %}
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eros turpis, maximus a iaculis quis, malesuada nec metus. Duis convallis lorem quis sem placerat placerat. Nam eget mollis diam, eu maximus ex. Fusce eu efficitur turpis. Nullam sit amet auctor velit. Curabitur eu faucibus mi. Mauris quis luctus est. Donec lacus est, luctus vitae faucibus quis, convallis a mi. Suspendisse pretium aliquam augue sit amet pulvinar. Nam ornare aliquet fermentum. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Nunc blandit finibus dolor, vitae porta felis elementum non.
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    .ebrw-info-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 30px;
+        background: var(--card-color, var(--header-bg, #fff));
+        border-radius: 12px;
+        box-shadow: 0 2px 10px var(--shadow-color, rgba(0,0,0,0.1));
+    }
+    .welcome-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .welcome-header h1 {
+        color: var(--primary-color, #58CC02);
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    .info-section {
+        margin: 25px 0;
+        padding: 20px;
+        background: var(--background-color, var(--card-color, #f5f5f5));
+        border-radius: 8px;
+        border-left: 4px solid var(--primary-color, #58CC02);
+    }
+    .info-section h2 {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-color, #333);
+        margin-bottom: 15px;
+        font-size: 1.3rem;
+    }
+    .info-section p {
+        color: var(--text-color, #666);
+        line-height: 1.7;
+        font-size: 1.05rem;
+        margin: 10px 0;
+    }
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        margin: 15px 0;
+        padding: 15px;
+        background: var(--card-color, var(--header-bg, #fff));
+        border-radius: 6px;
+    }
+    .info-item i {
+        font-size: 1.5rem;
+        color: var(--primary-color, #58CC02);
+        margin-top: 3px;
+    }
+    .info-item-content {
+        flex: 1;
+    }
+    .info-item-content strong {
+        color: var(--text-color, #333);
+        display: block;
+        margin-bottom: 5px;
+    }
+    .begin-button {
+        display: block;
+        width: 100%;
+        max-width: 300px;
+        margin: 40px auto 20px;
+        padding: 18px 40px;
+        background: var(--primary-color, #58CC02);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(88, 204, 2, 0.3);
+    }
+    .begin-button:hover {
+        background: #4db302;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(88, 204, 2, 0.4);
+    }
+    .begin-button i {
+        margin-right: 10px;
+    }
+</style>
 
-Ut malesuada ligula ultrices nulla porta placerat. Nam blandit augue ipsum, eget rutrum dolor tristique sed. Sed ultrices eros vel consectetur malesuada. Nunc nisi est, varius et metus nec, consequat convallis quam. Vestibulum in neque mollis, volutpat urna rhoncus, sodales ante. Morbi a dolor eget ante luctus condimentum. Mauris eget fermentum odio. Sed efficitur vel eros a lacinia. Sed eget massa tristique, eleifend dui a, scelerisque lectus. Pellentesque quis ultricies erat.
-
-Sed imperdiet gravida viverra. Fusce nulla sapien, luctus sed purus nec, bibendum suscipit nisl. Phasellus quis odio quam. In nec blandit quam. Cras non finibus quam, non scelerisque leo. Quisque aliquet, libero sed tempus maximus, tortor ante iaculis ligula, non blandit nulla mi mattis nisl. Quisque eget ullamcorper mi, a interdum mi. Integer volutpat sagittis pulvinar. Donec malesuada congue sapien, vitae pretium arcu.
-
-Donec bibendum erat ligula. Quisque mollis ipsum enim, sit amet fermentum augue hendrerit in. Cras aliquam, nibh a blandit dignissim, erat elit vulputate nibh, gravida dapibus orci enim vitae mi. Aenean elementum quam ante, eu vehicula augue blandit non. Aliquam vel feugiat arcu, ac blandit justo. Sed quis est auctor felis vehicula euismod. Nullam suscipit vel nisl eu pretium. Vestibulum eget magna rhoncus, rhoncus nisl ut, cursus justo. Suspendisse vulputate eros non ante mollis, nec scelerisque risus accumsan. Phasellus sollicitudin convallis ante vel dictum.
-
-In sollicitudin sed eros et dictum. Mauris imperdiet nunc at vulputate suscipit. Mauris hendrerit, leo quis finibus blandit, ex eros imperdiet quam, ut ornare dui mi ut dolor. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Integer lobortis neque sit amet tincidunt consectetur. Aliquam rhoncus enim in fermentum commodo. Suspendisse potenti. Mauris porta ante at orci fermentum sagittis. Sed vel massa a lorem consequat pellentesque a a mauris. Vivamus lobortis porta est a semper. Suspendisse sollicitudin justo sed ipsum lobortis, vitae vestibulum lectus blandit. In pharetra sit amet neque nec fringilla.
+<div class="ebrw-info-container">
+    <div class="welcome-header">
+        <h1><i class="fas fa-book-reader"></i> EBRW Practice Test</h1>
+    </div>
+    
+    <div class="info-section">
+        <h2><i class="fas fa-info-circle"></i> Welcome</h2>
+        <p>
+            Welcome to the Examlet full-length English section practice test. This comprehensive assessment 
+            is designed to help you prepare for the SAT Reading and Writing section by providing a realistic 
+            testing experience.
+        </p>
+        <p>
+            The test is timed, but you can pause it at any time if you need a break. When you finish the 
+            practice, you'll be able to see your detailed score and review all your answers on the 
+            <strong>Progress</strong> page. Use of a calculator during this part is permitted, though it's 
+            typically not needed for Reading and Writing questions.
+        </p>
+        <p style="margin-top: 15px; font-weight: 600; color: var(--primary-color, #58CC02);">
+            Good luck! You've got this! 🎯
+        </p>
+    </div>
+    
+    <div class="info-section">
+        <h2><i class="fas fa-clock"></i> Test Structure</h2>
+        <div class="info-item">
+            <i class="fas fa-list-ol"></i>
+            <div class="info-item-content">
+                <strong>Two Parts</strong>
+                <p>Each part is 32 minutes long with no breaks between them.</p>
+            </div>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-question-circle"></i>
+            <div class="info-item-content">
+                <strong>27 Questions Per Part</strong>
+                <p>Each part contains 27 carefully selected questions covering various skills and difficulty levels.</p>
+            </div>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-pause-circle"></i>
+            <div class="info-item-content">
+                <strong>Pause Anytime</strong>
+                <p>You can pause and resume the timer whenever you need to take a break.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info-section">
+        <h2><i class="fas fa-tasks"></i> Question Types</h2>
+        <div class="info-item">
+            <i class="fas fa-book"></i>
+            <div class="info-item-content">
+                <strong>Vocabulary (Questions 1-5)</strong>
+                <p>Test your knowledge of word meanings and usage.</p>
+            </div>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-language"></i>
+            <div class="info-item-content">
+                <strong>Words in Context & Function (Questions 6-7)</strong>
+                <p>Understand how words function within passages and sentences.</p>
+            </div>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-paragraph"></i>
+            <div class="info-item-content">
+                <strong>Reading Comprehension (Questions 8-15)</strong>
+                <p>Analyze passages and answer questions about their content and structure.</p>
+            </div>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-edit"></i>
+            <div class="info-item-content">
+                <strong>Standard English Conventions (Questions 16-22)</strong>
+                <p>Demonstrate your understanding of grammar, punctuation, and sentence structure.</p>
+            </div>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-exchange-alt"></i>
+            <div class="info-item-content">
+                <strong>Transitions & Synthesis (Questions 23-26)</strong>
+                <p>Work with transitions and synthesize information from multiple sources.</p>
+            </div>
+        </div>
+    </div>
+    
+    <a href="{{ url_for('ebrw_practice_start') }}" class="begin-button">
+        <i class="fas fa-play"></i> Begin Practice
+    </a>
+</div>
 {% endblock %}
